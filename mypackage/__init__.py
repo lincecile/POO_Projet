@@ -1,3 +1,1 @@
-from lLinearRegression import LinearRegression
-
-__all__ = ["LinearRegression"]
+from mypackage.lLinearRegression import LinearRegression
