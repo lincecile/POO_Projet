@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from mypackage import Strategy, Backtester, compare_results, strategy
-# testaaaaaaaaaaaaaaaaaa
 
 data = pd.read_csv('fichier_donnée.csv', sep=';')
 data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
