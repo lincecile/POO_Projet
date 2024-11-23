@@ -1,0 +1,10 @@
+import pandas as pd
+from Backtester_Class import Backtester
+from Strategy_Class import MovingAverageCrossStrategy
+
+def test_backtester():
+    data = pd.DataFrame({"price": [100, 102, 101, 103, 104]})
+    strategy = MovingAverageCrossStrategy(short_window=2, long_window=3)
+    backtester = Backtester(data)
+    result = backtester.run(strategy)
+    assert result is not None
