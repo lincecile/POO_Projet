@@ -36,6 +36,7 @@ class Strategy(ABC):
 def strategy(func: Callable) -> Strategy:
     """Décorateur pour créer une stratégie simple à partir d'une fonction."""
     class WrappedStrategy(Strategy):
+        
         def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
             return func(historical_data, current_position)
     return WrappedStrategy()
