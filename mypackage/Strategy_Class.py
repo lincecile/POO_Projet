@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import pandas as pd
 from typing import Callable
-
+#aaa
 # Créez une classe abstraite Strategy avec les contraintes suivantes 
 class Strategy(ABC):
     """Classe abstraite de base pour les stratégies de trading."""
