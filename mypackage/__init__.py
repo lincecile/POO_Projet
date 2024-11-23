@@ -1,1 +1,2 @@
 from mypackage.lLinearRegression import LinearRegression
+from mypackage.Strategy_Class import Strategy

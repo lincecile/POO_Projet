@@ -2,13 +2,17 @@
 name = "introduction-python"
 version = "0.1.0"
 description = ""
-authors = ["remigenet <remi.genet@gmail.com>"]
+authors = ["CécileLin <lincecile7@gmail.com>"]
 readme = "README.md"
 packages = [{include = "mypackage"}]  
 
 [tool.poetry.dependencies]
-python = "^3.12"
-numpy = "^2.1.2"
+python = "^3.12.4"  # Ensure your Python version is specified.
+pandas = "^2.0.0"
+numpy = "^1.26.0"  # Update to the latest compatible version.
+matplotlib = ">=3.0.0"
+seaborn = ">=0.12.0"  # Adjust to a more recent stable version.
+plotly = ">=3.6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
