@@ -36,8 +36,22 @@ class Strategy(ABC):
 def strategy(func: Callable) -> Strategy:
     """Décorateur pour créer une stratégie simple à partir d'une fonction."""
     class WrappedStrategy(Strategy):
+        
         def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
             return func(historical_data, current_position)
     return WrappedStrategy()
 
 
+class MovingAverageCrossStrategy(Strategy):
+    def __init__(self, short_window=20, long_window=50):
+        self.short_window = short_window
+        self.long_window = long_window
+
+    def get_position(self, historical_data, current_position):
+        short_ma = historical_data[-self.short_window:].mean()
+        long_ma = historical_data[-self.long_window:].mean()
+        if short_ma > long_ma:
+            return 1  # Long
+        elif short_ma < long_ma:
+            return -1  # Short
+        return 0  # Neutral
