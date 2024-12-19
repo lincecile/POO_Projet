@@ -6,7 +6,7 @@ La classe `Result` calcule différentes statistiques de performance: %%différen
 
 - $\text{Performance annualisée} = \left( \prod_{t=1}^T (1 + r_t) \right)^{\frac{N}{T}} - 1$
 
-- $\text{Facteur de profitabilité} = \frac{\text{Gain total}}{\text{Perte totale}$
+- $\text{Facteur de profitabilité} = \frac{\text{Gain total}}{\text{Perte totale}}$
 
 - $\text{Volatilité annualisée} = \sigma(r) \cdot \sqrt{N}$
 
@@ -16,9 +16,9 @@ La classe `Result` calcule différentes statistiques de performance: %%différen
 
 - $\text{Ratio de Sortino} = \frac{\bar{r} - r_f}{\sigma_{\text{négatif}}(r)}$
 
-- $\text{VaR (Value at Risk) à 95\%} = \text{Quantile}_{5\%}(-r)$
+- $\text{VaR (Value at Risk) à 95\%} = \text{Quantile}_{0.05}(-r)$
 
-- $\text{CVaR (Conditional Value at Risk) à 95\%} = \mathbb{E}[r \mid r \leq \text{VaR}_{95\%}]$
+- $\text{CVaR (Conditional Value at Risk) à 95\%} = \mathbb{E}[r \mid r \leq \text{VaR}_{0.95}]$
 
 - $\text{Profit/Loss Ratio} = \frac{\text{Gain moyen}}{\text{Perte moyenne}}$
 
