@@ -13,21 +13,11 @@ def test_has_method4():
 def test_has_method3():
     assert hasattr(Result, "_calculate_returns")
 
-
-exit()
-
-import sys
-import os
+### OUMAIMA 
 import unittest
 import pandas as pd
 import numpy as np
-from typing import List
 
-# Ajouter dynamiquement le chemin racine
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
-from mypackage import Backtester
-from mypackage import Strategy
 from mypackage import Result, compare_results
 
 class MovingAverageStrategy(Strategy):
