@@ -6,35 +6,36 @@ L'outil permet aux utilisateurs de développer et d'évaluer leurs propres strat
 **Fonctionnalités du framework** : L'utilisateur peut 
 - définir et tester facilement de nouvelles stratégies.
 - comparer plusieurs stratégies entre elles.
+- définir des frais de transaction et de slippage.
+- créer des stratégies par héritage de la classe abstraite ou par un décorateur.
+- spécifier une fréquence de rebalancement pour chaque stratégie.
 
-%%%% A voir
-- Implémentez des fonctionnalités pour gérer les frais de transaction et le slippage.
-- Le framework doit permettre de créer et de tester des stratégies sur un ou plusieurs actifs simultanément.
+%%% pour l'instant qu'un seul actif
+- créer et de tester des stratégies sur un ou plusieurs actifs simultanément en plaçant les actifs dans 
+%%%% 
 
 ## Données:
    - Le framework accepte des données d'entrée au format CSV ou Parquet.
    - Les données doivent être fournies par l'utilisateur.
 
-%%%% 
-
 ## Implémentation du backtester:
 
-### Classe `Strategy`
+### Classe abstraite `Strategy`
 
+La classe `Strategy` possède :
 - Méthode obligatoire : `get_position(historical_data, current_position)`
-- Méthode optionnelle : `fit(data)` (par défaut, cette méthode ne fait rien si elle n'est pas implémentée)
-
-- Permettez la création de stratégies soit par héritage de la classe abstraite, soit par un décorateur pour les stratégies simples ne nécessitant que `get_position`.
+- Méthode optionnelle : `fit(data)` %%%%%
 
 ### Classe `Backtester`
 
-La classe `Backtester` est instanciée avec une série de données d'entrée
+La classe `Backtester` est instanciée avec une série de données d'entrée :
 - Possède une méthode pour exécuter le backtest en prenant une instance de `Strategy`
 - Renvoie une instance de la classe `Result` après l'exécution du backtest
 
 ### Classe `Result` 
 
-La classe `Result` calcule différentes statistiques de performance: %%différentes méthodes pour le plotting%%
+La classe `Result` calcule différentes statistiques de performance: 
+%%différentes méthodes pour le plotting%%
 
 - $\text{Performance totale} = \prod_{t=1}^T (1 + r_t) - 1$
 
@@ -61,23 +62,21 @@ La classe `Result` calcule différentes statistiques de performance: %%différen
 - $\text{Pourcentage de trades gagnants} = \frac{\text{Nombre de trades gagnants}}{\text{Nombre total de trades}} \cdot 100$
 
 ### Fonction `compare_results(result_1, result_2, ...)` 
-pour comparer les résultats de différentes stratégies.
-- Implémentez la possibilité de choisir le backend pour les visualisations (matplotlib par défaut, avec options pour seaborn et plotly).
-- Permettez de spécifier une fréquence de rééquilibrage pour chaque stratégie.
 
-
+Cette fonction permet de comparer les résultats de différentes stratégies de manière graphique.
+- L'utilisateur a la possibilité de choisir le backend pour les visualisations (matplotlib, seaborn ou plotly).
 
 4. **Structuration du code** :
-   - Adoptez une approche orientée objet pour la structure de votre projet.
-   - Divisez votre code en modules et classes distincts pour chaque fonctionnalité.
-   - Commentez et documentez votre code pour faciliter sa compréhension.
-   - Créez un fichier `pyproject.toml` pour permettre l'installation via pip.
-   - Incluez des tests unitaires et d'intégration pour votre code.
+- Adoptez une approche orientée objet pour la structure de votre projet.
+- Divisez votre code en modules et classes distincts pour chaque fonctionnalité.
+- Commentez et documentez votre code pour faciliter sa compréhension.
+- Créez un fichier `pyproject.toml` pour permettre l'installation via pip.
+- Incluez des tests unitaires et d'intégration pour votre code.
 
 5. **Exemple d'utilisation** :
-   - Fournissez un notebook Jupyter (ou équivalent) qui démontre l'utilisation du package.
-   - Ce notebook doit inclure un exemple complet d'utilisation du framework, de la création d'une stratégie à l'analyse des résultats.
-   - Assurez-vous que l'exemple montre les principales fonctionnalités du framework et inclut des visualisations des résultats.
+- Fournissez un notebook Jupyter (ou équivalent) qui démontre l'utilisation du package.
+- Ce notebook doit inclure un exemple complet d'utilisation du framework, de la création d'une stratégie à l'analyse des résultats.
+- Assurez-vous que l'exemple montre les principales fonctionnalités du framework et inclut des visualisations des résultats.
 
 ## Critères d'évaluation
 

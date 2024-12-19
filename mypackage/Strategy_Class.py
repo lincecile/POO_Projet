@@ -33,17 +33,20 @@ class Strategy(ABC):
 # Permettez la création de stratégies 
 #   soit par héritage de la classe abstraite, 
 #   soit par un décorateur pour les stratégies simples ne nécessitant que get_position.
-def strategy(func: Callable) -> Strategy:
+def strategy(func):
     """Décorateur pour créer une stratégie simple à partir d'une fonction."""
+    
     class WrappedStrategy(Strategy):
-        
+        def __init__(self, rebalancing_frequency='D'):
+            super().__init__(rebalancing_frequency=rebalancing_frequency)
+            
         def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
-            return func(historical_data, current_position)
+            return func(historical_data, current_position, self.rebalancing_frequency)
         
         @property
         def __name__(self):
-            return func.__name__
-        
-    return WrappedStrategy()
+            return f"{func.__name__}_{self.rebalancing_frequency}"
+    
+    return WrappedStrategy
 
 
