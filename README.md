@@ -1,11 +1,9 @@
-
 La classe `Result` calcule différentes statistiques de performance: %%différentes méthodes pour le plotting%%
-- Performance totale
-$$
-\text{Performance totale} = \prod_{t=1}^T (1 + r_t) - 1
-$$
+#### Performance totale
 
-- Performance annualisée
+$\text{Performance totale} = \prod_{t=1}^T (1 + r_t) - 1$
+
+#### Performance annualisée
 $$
 \text{Performance annualisée} = \left( \prod_{t=1}^T (1 + r_t) \right)^{\frac{N}{T}} - 1
 $$
