@@ -23,7 +23,7 @@ class Result:
     
     def _calculate_returns(self) -> pd.Series:
         """Calcule les rendements de la stratégie."""
-        price_returns = self.data['close'].pct_change()
+        price_returns = self.data[self.data.columns[0]].pct_change()
         strategy_returns = price_returns * self.positions['position'].shift(1)
         
         if not self.trades.empty:
@@ -143,7 +143,7 @@ def compare_results(*results: Result, backend: str = 'matplotlib'):
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(
                 name=col,
-                x=range(len(stats_comparison)),
+                x=list(range(len(stats_comparison))),
                 y=stats_comparison[col]
             ))
         

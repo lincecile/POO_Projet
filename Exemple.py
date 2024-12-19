@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 from mypackage import Strategy, Backtester, compare_results, strategy
 
-data = pd.read_csv('fichier_donnée.csv', sep=';')
+data = pd.read_csv('fichier_donnée.csv', sep=';').replace(',', '.', regex=True)
 data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
 data.set_index('Date_Price', inplace=True)
+data = data.astype(float)
 print(data)
 
 # Création d'une stratégie par héritage
@@ -58,4 +59,4 @@ result_ma.plot(backend='plotly')
 result_mom.plot(backend='plotly')
 
 # Comparaison des stratégies
-compare_results(result_ma, result_mom, backend='plotly')
+compare_results(result_ma, result_mom, backend='plotly').show()
