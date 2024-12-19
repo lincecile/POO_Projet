@@ -1,3 +1,68 @@
+
+La classe `Result` calcule différentes statistiques de performance: %%différentes méthodes pour le plotting%%
+- Performance totale
+\[
+\text{Performance totale} = \prod_{t=1}^T (1 + r_t) - 1
+\]
+
+- Performance annualisée
+\[
+\text{Performance annualisée} = \left( \prod_{t=1}^T (1 + r_t) \right)^{\frac{N}{T}} - 1
+\]
+
+- Facteur de profitabilité
+\[
+\text{Facteur de profitabilité} = \frac{\text{Gain total}}{\text{Perte totale}}
+\]
+
+- Volatilité annualisée
+\[
+\text{Volatilité} = \sigma(r) \cdot \sqrt{N}
+\]
+
+- Ratio de Sharpe
+\[
+\text{Ratio de Sharpe} = \frac{\bar{r} - r_f}{\sigma(r)}
+\]
+
+- Drawdown maximum
+\[
+\text{Maximum Drawdown} = \min \left( \frac{C_t - \max(C_{1:t})}{\max(C_{1:t})} \right)
+\]
+
+- Ratio de Sortino
+\[
+\text{Ratio de Sortino} = \frac{\bar{r} - r_f}{\sigma_{\text{négatif}}(r)}
+\]
+
+- VaR (Value at Risk) à 95%
+\[
+\text{VaR}_{95\%} = \text{Quantile}_{5\%}(-r)
+\]
+
+- CVaR (Conditional Value at Risk) à 95%
+\[
+\text{CVaR}_{95\%} = \mathbb{E}[r \mid r \leq \text{VaR}_{95\%}]
+\]
+
+- Gain/Pertes moyen (Profit/Loss Ratio)
+\[
+\text{Profit/Loss Ratio} = \frac{\text{Gain moyen}}{\text{Perte moyenne}}
+\]
+
+- Nombre de trades
+\[
+\text{Nombre de trades} = \text{Nombre total d’observations de rendements}
+\]
+
+- Pourcentage de trades gagnants
+\[
+\text{Pourcentage de trades gagnants} = \frac{\text{Nombre de trades gagnants}}{\text{Nombre total de trades}} \cdot 100
+\]
+
+
+
+
 ## Description du projet
 
 Conception d'un framework de backtesting permettant d'évaluer et de comparer différentes stratégies d'investissement sur des données historiques. Ce framework vous aidera à implémenter, tester et analyser diverses stratégies de trading, en fournissant des métriques de performance et des visualisations pour faciliter la prise de décision. L'objectif est de créer un outil flexible et extensible qui permet aux utilisateurs de développer et d'évaluer leurs propres stratégies d'investissement.

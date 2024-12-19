@@ -33,36 +33,56 @@ class Result:
     
     def _calculate_statistics(self) -> dict:
         """Calcule les statistiques de performance."""
-        total_return = (1 + self.returns).prod() - 1
-        annual_return = (1 + total_return) ** (252 / len(self.returns)) - 1
-        volatility = self.returns.std() * np.sqrt(252)
-        sharpe_ratio = annual_return / volatility if volatility != 0 else 0
         
-        drawdowns = (self.returns.cumsum() - self.returns.cumsum().cummax())
+        total_return = (1 + self.returns).prod() - 1                                    # Performance total
+        annual_return = (1 + total_return) ** (252 / len(self.returns)) - 1             # Performance annualisé
+        volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
+
+        sharpe_ratio = annual_return / volatility if volatility != 0 else 0             # Ratio de Sharpe
+        
+        drawdowns = (self.returns.cumsum() - self.returns.cumsum().cummax())            # Drawdown maximum
         max_drawdown = drawdowns.min()
         
-        downside_returns = self.returns[self.returns < 0]
+        downside_returns = self.returns[self.returns < 0]                               # Ratio de Sortino
         sortino_ratio = (annual_return / (downside_returns.std() * np.sqrt(252))
                         if len(downside_returns) > 0 else 0)
         
-        # Performance totale et annualisée
-        # Volatilité
-        # Ratio de Sharpe
-        # Drawdown maximum
-        # Ratio de Sortino
-        # Nombre de trades
+        var_95 = np.percentile(self.returns, 5)                                         # VaR (Value at Risk) à 95%
+
+        # CVaR (Conditional Value at Risk) à 95%
+        cvar_95 = self.returns[self.returns <= var_95].mean() if len(self.returns[self.returns <= var_95]) > 0 else 0
+
+        # Gain/Pertes moyen (Profit/Loss Ratio)
+        avg_gain = self.returns[self.returns > 0].mean() if len(self.returns[self.returns > 0]) > 0 else 0
+        avg_loss = self.returns[self.returns < 0].mean() if len(self.returns[self.returns < 0]) > 0 else 0
+        profit_loss_ratio = abs(avg_gain / avg_loss) if avg_loss != 0 else np.nan
+
         # Pourcentage de trades gagnants
+        win_rate = (self.returns[self.returns > 0].count() / self.returns[self.returns != 0].count() if self.returns[self.returns != 0].count() > 0 else 0)
+
+        # Facteur de profitabilité
+        total_gain = self.returns[self.returns > 0].sum()
+        total_loss = self.returns[self.returns < 0].sum()
+        profit_factor = abs(total_gain / total_loss) if total_loss != 0 else np.nan
+
         return {
             'total_return': total_return,
             'annual_return': annual_return,
+            'profit_factor': profit_factor,
             'volatility': volatility,
+
             'sharpe_ratio': sharpe_ratio,
             'max_drawdown': max_drawdown,
+
             'sortino_ratio': sortino_ratio,
+
+            'VaR_95%': var_95,
+            'CVaR_95%': cvar_95,
+
+            'Profit/Loss_Ratio': profit_loss_ratio,
+            
             'num_trades': len(self.trades),
-            'win_rate': (self.returns[self.returns > 0].count() /
-                        self.returns[self.returns != 0].count()
-                        if self.returns[self.returns != 0].count() > 0 else 0)
+            'win_rate': win_rate  
         }
     
     # Implémentez la possibilité de choisir le backend pour les visualisations (matplotlib par défaut, avec options pour seaborn et plotly).
