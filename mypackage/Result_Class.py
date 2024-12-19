@@ -146,10 +146,11 @@ class Result:
             return fig
 
 # Ajoutez une fonction compare_results(result_1, result_2, ...) pour comparer les résultats de différentes stratégies.
-def compare_results(*results: Result, backend: str = 'matplotlib'):
+def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
-    stats_comparison = pd.DataFrame([r.statistics for r in results])
-    
+    print(results)
+    stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name)
+
     if backend == 'matplotlib':
         fig, ax = plt.subplots(figsize=(12, 6))
         stats_comparison.plot(kind='bar', ax=ax)
@@ -163,7 +164,7 @@ def compare_results(*results: Result, backend: str = 'matplotlib'):
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(
                 name=col,
-                x=list(range(len(stats_comparison))),
+                x=strat_name,
                 y=stats_comparison[col]
             ))
         

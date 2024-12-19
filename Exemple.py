@@ -42,21 +42,23 @@ backtester = Backtester(data, transaction_costs=0.001)
 ma_strategy = MovingAverageCrossover(20, 50)
 mom_strategy = momentum_strategy
 
-result_ma = backtester.run(ma_strategy)
-result_mom = backtester.run(mom_strategy)
+list_strat = [ma_strategy,mom_strategy]
+nom_strat = [obj.__name__ if hasattr(obj, '__name__') else obj.__class__.__name__ for obj in list_strat]
 
-# Affichage des statistiques
-print("Statistiques de la stratégie Moving Average:")
-for key, value in result_ma.statistics.items():
-    print(f"{key}: {value:.4f}")
+num = -1
+results_dict = {}
+for strat in list_strat:
+    num += 1
+    results_dict[f'result_strat_{num}'] = backtester.run(strat)
 
-print("\nStatistiques de la stratégie Momentum:")
-for key, value in result_mom.statistics.items():
-    print(f"{key}: {value:.4f}")
+    # Affichage des statistiques
+    print(f"Statistiques de la stratégie {nom_strat[num]}:")
+    for key, value in results_dict[f'result_strat_{num}'].statistics.items():
+        print(f"{key}: {value:.4f}")
 
 # Visualisation des résultats
-result_ma.plot(backend='plotly')
-result_mom.plot(backend='plotly')
+for strat in results_dict.values():
+    strat.plot(backend='plotly')
 
 # Comparaison des stratégies
-compare_results(result_ma, result_mom, backend='plotly').show()
+compare_results(results_dict.values(), strat_name=nom_strat, backend='plotly').show()

@@ -39,6 +39,11 @@ def strategy(func: Callable) -> Strategy:
         
         def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
             return func(historical_data, current_position)
+        
+        @property
+        def __name__(self):
+            return func.__name__
+        
     return WrappedStrategy()
 
 
