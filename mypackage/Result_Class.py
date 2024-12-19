@@ -86,7 +86,7 @@ class Result:
         }
     
     # Implémentez la possibilité de choisir le backend pour les visualisations (matplotlib par défaut, avec options pour seaborn et plotly).
-    def plot(self, backend: str = 'matplotlib'):
+    def plot(self, name_strat: str, backend: str = 'matplotlib'):
         """
         Visualise les résultats du backtest.
         
@@ -99,7 +99,7 @@ class Result:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
             
             cumulative_returns.plot(ax=ax1)
-            ax1.set_title('Rendements cumulatifs')
+            ax1.set_title(f'Rendements cumulatifs {name_strat}')
             ax1.grid(True)
             
             self.positions['position'].plot(ax=ax2)
@@ -113,7 +113,7 @@ class Result:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
             
             sns.lineplot(data=cumulative_returns, ax=ax1)
-            ax1.set_title('Rendements cumulatifs')
+            ax1.set_title(f'Rendements cumulatifs {name_strat}')
             
             sns.lineplot(data=self.positions['position'], ax=ax2)
             ax2.set_title('Positions')
@@ -123,7 +123,7 @@ class Result:
             
         elif backend == 'plotly':
             fig = go.Figure()
-            
+
             fig.add_trace(go.Scatter(
                 x=cumulative_returns.index,
                 y=cumulative_returns.values,
@@ -136,19 +136,19 @@ class Result:
                 name='Positions',
                 yaxis='y2'
             ))
-            
+
             fig.update_layout(
-                title='Résultats du Backtest',
+                title=f'Résultats du Backtest {name_strat}',
                 yaxis2=dict(overlaying='y', side='right'),
                 height=600
             )
-            
+            fig.show()
             return fig
 
 # Ajoutez une fonction compare_results(result_1, result_2, ...) pour comparer les résultats de différentes stratégies.
 def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
-    print(results)
+
     stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name)
 
     if backend == 'matplotlib':
@@ -156,11 +156,32 @@ def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'
         stats_comparison.plot(kind='bar', ax=ax)
         ax.set_title('Comparaison des stratégies')
         plt.tight_layout()
+        plt.xticks(rotation=0, ha='right', fontsize=10)
+        return fig
+    
+    elif backend == 'seaborn':
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # Melt the dataframe to long format for seaborn
+        stats_long = stats_comparison.reset_index().melt(
+            id_vars='index', 
+            var_name='Metric', 
+            value_name='Value'
+        )
+        sns.barplot(
+            data=stats_long,
+            x='index',
+            y='Value',
+            hue='Metric',
+            ax=ax
+        )
+        ax.set_title('Comparaison des stratégies')
+        #ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha='right', fontsize=10)
+        plt.tight_layout()
         return fig
     
     elif backend == 'plotly':
         fig = go.Figure()
-        print(stats_comparison)
+        
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(
                 name=col,

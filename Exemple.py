@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from mypackage import Strategy, Backtester, compare_results, strategy
+import matplotlib.pyplot as plt
 
 data = pd.read_csv('fichier_donnée.csv', sep=';').replace(',', '.', regex=True)
 data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
@@ -44,21 +45,24 @@ mom_strategy = momentum_strategy
 
 list_strat = [ma_strategy,mom_strategy]
 nom_strat = [obj.__name__ if hasattr(obj, '__name__') else obj.__class__.__name__ for obj in list_strat]
-
+type_graph = 'seaborn'#'plotly'#'seaborn'#'matplotlib'
 num = -1
 results_dict = {}
 for strat in list_strat:
     num += 1
-    results_dict[f'result_strat_{num}'] = backtester.run(strat)
+    results_dict[f'{nom_strat[num]}'] = backtester.run(strat)
 
     # Affichage des statistiques
     print(f"Statistiques de la stratégie {nom_strat[num]}:")
-    for key, value in results_dict[f'result_strat_{num}'].statistics.items():
+    for key, value in results_dict[f'{nom_strat[num]}'].statistics.items():
         print(f"{key}: {value:.4f}")
 
 # Visualisation des résultats
-for strat in results_dict.values():
-    strat.plot(backend='plotly')
+for strat_name, strat in results_dict.items():
+    strat.plot(name_strat = strat_name, backend=type_graph)
 
 # Comparaison des stratégies
-compare_results(results_dict.values(), strat_name=nom_strat, backend='plotly').show()
+compare_results(results_dict.values(), strat_name=nom_strat, backend=type_graph).show()
+
+# afin de garder les fenetres graphiques ouvertes sur vscode
+plt.show()
