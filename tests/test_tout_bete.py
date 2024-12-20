@@ -22,6 +22,8 @@ import pandas as pd
 import numpy as np
 
 from mypackage import Result, compare_results
+from mypackage import MCOBasedStrategy
+
 
 class MovingAverageStrategy(Strategy):
     """Stratégie simple basée sur un croisement de moyennes mobiles."""
@@ -53,6 +55,82 @@ class MovingAverageStrategy(Strategy):
         elif short_ma.iloc[-1] < long_ma.iloc[-1]:
             return -1  # Short
         return 0  # Neutre
+    
+
+class TestMCOBasedStrategy(unittest.TestCase):
+
+    def setUp(self):
+        # Données simulées pour le test
+        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        self.data = pd.DataFrame({
+            'price': np.linspace(100, 110, len(dates))  # Une montée linéaire des prix
+        }, index=dates)
+        
+        self.mco_strategy = MCOBasedStrategy(threshold=0.05)
+        self.initial_cost = 100  # Coût moyen initial
+        self.mco_strategy.fit(self.data, initial_position_cost=self.initial_cost)
+
+    def test_fit_method(self):
+        # Vérifier que le coût moyen est bien initialisé
+        self.assertEqual(self.mco_strategy.average_cost, self.initial_cost)
+    
+    def test_get_position_buy_signal(self):
+        # Simuler un prix inférieur au coût moyen
+        low_price_data = self.data.copy()
+        low_price_data.loc[low_price_data.index[-1], 'price'] = 95  # Dernier prix inférieur au coût moyen
+
+        position = self.mco_strategy.get_position(low_price_data, current_position=0)
+        self.assertEqual(position, 1)  # Signal d'achat attendu
+
+    def test_get_position_sell_signal(self):
+        # Simuler un prix supérieur au coût moyen
+        high_price_data = self.data.copy()
+        high_price_data.loc[high_price_data.index[-1], 'price'] = 120  # Dernier prix supérieur au coût moyen
+
+        position = self.mco_strategy.get_position(high_price_data, current_position=0)
+        self.assertEqual(position, -1)  # Signal de vente attendu
+
+    def test_get_position_neutral_signal(self):
+        # Simuler un prix proche du coût moyen
+        neutral_price_data = self.data.copy()
+        neutral_price_data.loc[neutral_price_data.index[-1], 'price'] = 101  # Proche du coût moyen
+
+        position = self.mco_strategy.get_position(neutral_price_data, current_position=0)
+        self.assertEqual(position, 0)  # Signal neutre attendu
+
+class TestMCOIntegrationWithBacktester(unittest.TestCase):
+
+    def setUp(self):
+        # Données simulées pour le test
+        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        self.data = pd.DataFrame({
+            'price': np.random.randn(len(dates)).cumsum() + 100  # Série temporelle générée aléatoirement
+        }, index=dates)
+
+        self.mco_strategy = MCOBasedStrategy(threshold=0.05)
+        self.mco_strategy.fit(self.data, initial_position_cost=100)  # Initialiser avec un coût moyen
+
+        self.backtester = Backtester(self.data)
+
+    def test_backtester_with_mco_strategy(self):
+        # Exécuter la stratégie avec le backtester
+        result = self.backtester.run(self.mco_strategy)
+
+        # Vérifier que le résultat est de la bonne classe
+        self.assertIsInstance(result, Result)
+        self.assertTrue(hasattr(result, 'positions'))
+        self.assertTrue(hasattr(result, 'trades'))
+        self.assertTrue(hasattr(result, 'returns'))
+
+    def test_mco_strategy_trading_logic(self):
+        # Exécuter la stratégie pour des données spécifiques
+        modified_data = self.data.copy()
+        modified_data.loc[modified_data.index[-1], 'price'] = 120  # Simuler une montée des prix
+        result = self.backtester.run(self.mco_strategy)
+
+        # Vérifier que la stratégie a émis au moins une transaction
+        self.assertFalse(result.trades.empty)
+
 
 class TestBacktesting(unittest.TestCase):
     def setUp(self):
