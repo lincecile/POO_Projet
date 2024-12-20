@@ -99,4 +99,82 @@ class VolatilityBasedStrategy(Strategy):
         else:
             return 1.0  # Acheter si la volatilité est faible (risque faible)
 
+class MCOBasedStrategy(Strategy):
+    """Stratégie basée sur l'optimisation du coût moyen (MCO)."""
+
+    def __init__(self, threshold: float = 0.05, rebalancing_frequency: str = 'D'):
+        """
+        Initialise la stratégie MCO.
+
+        Args:
+            threshold: Seuil relatif pour prendre une décision d'achat ou de vente (en pourcentage, ex: 0.05 pour 5%).
+            rebalancing_frequency: Fréquence de rééquilibrage.
+        """
+        super().__init__(rebalancing_frequency)
+        self.threshold = threshold
+        self.average_cost = None  # Coût moyen de la position
+
+    def fit(self, data: pd.DataFrame, initial_position_cost: float) -> None:
+        """
+        Initialise le coût moyen avec un coût existant ou estimé.
+
+        Args:
+            data: DataFrame contenant les données historiques avec une colonne 'price'.
+            initial_position_cost: Coût moyen initial de la position.
+        """
+        if 'price' not in data.columns:
+            raise ValueError("Les données historiques doivent contenir une colonne 'price'.")
+
+        self.average_cost = initial_position_cost
+
+    def update_average_cost(self, executed_price: float, executed_quantity: float, current_position: float) -> None:
+        """
+        Met à jour le coût moyen en fonction des transactions exécutées.
+
+        Args:
+            executed_price: Prix auquel la transaction a été exécutée.
+            executed_quantity: Quantité achetée/vendue (positive pour achat, négative pour vente).
+            current_position: Position actuelle avant la transaction.
+        """
+        new_position = current_position + executed_quantity
+        if new_position == 0:
+            self.average_cost = None  # Position fermée, pas de coût moyen
+        else:
+            self.average_cost = (
+                (self.average_cost * current_position + executed_price * executed_quantity) / new_position
+            )
+
+    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
+        """
+        Ajuste la position pour optimiser le coût moyen.
+
+        Args:
+            historical_data: DataFrame contenant les données historiques.
+            current_position: Position actuelle.
+
+        Returns:
+            float: Position désirée (-1 pour vendre, 1 pour acheter, 0 pour neutre).
+        """
+        if self.average_cost is None:
+            raise ValueError("Le coût moyen doit être initialisé avec la méthode fit().")
+
+        if historical_data.empty:
+            return 0.0  # Neutre si pas de données
+
+        current_price = historical_data['price'].iloc[-1]
+
+        if pd.isna(current_price):
+            return 0.0  # Neutre si les données sont manquantes
+
+        # Calcul de l'écart relatif par rapport au coût moyen
+        price_deviation = (current_price - self.average_cost) / self.average_cost
+
+        # Si le prix est bien supérieur au coût moyen, on vend
+        if price_deviation > self.threshold:
+            return -1.0  # Vendre
+        # Si le prix est bien inférieur au coût moyen, on achète
+        elif price_deviation < -self.threshold:
+            return 1.0  # Acheter
+        else:
+            return 0.0  # Neutre si le prix est proche du coût moyen
 
