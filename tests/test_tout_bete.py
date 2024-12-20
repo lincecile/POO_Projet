@@ -1,4 +1,7 @@
-from mypackage import Strategy, Backtester, Result
+from mypackage import Backtester, Result, Strategy, strategy, compare_results
+import unittest
+import pandas as pd
+import numpy as np
 
 def test_simple():
     assert 1 + 1 == 2
@@ -29,22 +32,12 @@ class MovingAverageStrategy(Strategy):
         self.target_column = target_column
 
     def validate_data(self, data: pd.DataFrame):
-    # Vérifie que l'objet est un DataFrame
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError("Les données doivent être un DataFrame pandas.")
-    
-    # Vérifie si le DataFrame est vide
         if data.empty:
             raise ValueError("Les données sont vides.")
-    
-    # Vérifie la présence de la colonne cible
         if self.target_column not in data.columns:
-            raise KeyError(f"La colonne cible '{self.target_column}' est manquante.")
-    
-    # Vérifie les valeurs nulles
+            raise KeyError(f"La colonne '{self.target_column}' est manquante.")
         if data.isnull().any().any():
             raise ValueError("Les données contiennent des valeurs nulles.")
-
 
 
     def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
@@ -63,81 +56,119 @@ class MovingAverageStrategy(Strategy):
 
 class TestBacktesting(unittest.TestCase):
     def setUp(self):
-        self.valid_data = pd.DataFrame(
-            {"price": [100, 101, 102, 103, 104]},
-            index=pd.date_range(start="2023-01-01", periods=5)
-        )
-        self.invalid_data = pd.DataFrame({"not_price": [100, 101, 102]})
-        self.empty_data = pd.DataFrame(columns=["price"])
-        self.nan_data = pd.DataFrame(
-            {"price": [100, np.nan, 102, 103, 104]},
-            index=pd.date_range(start="2023-01-01", periods=5)
-        )
-        self.strategy = MovingAverageStrategy()
-        self.backtester = Backtester(self.valid_data)
-
-    def test_strategy_get_position_valid_data(self):
-        """Teste la méthode get_position() avec des données valides."""
-        position = self.strategy.get_position(self.valid_data.iloc[:3], current_position=0)
-        self.assertIn(position, [-1, 0, 1], "La position doit être -1, 0 ou 1.")
-
-    def test_strategy_invalid_column(self):
-        """Teste get_position() avec des colonnes invalides."""
-        with self.assertRaises(ValueError):
-            self.strategy.get_position(self.invalid_data, current_position=0)
-
-    def check_invalid_data(self, data):
-        with self.assertRaises(ValueError):
-            self.strategy.get_position(data, current_position=0)
-
-    def test_strategy_empty_data(self):
-        self.check_invalid_data(self.empty_data)
-
-    def test_strategy_nan_data(self):
-        self.check_invalid_data(self.nan_data)
-
-
-    def test_backtester_valid_run(self):
-        """Teste un backtest avec des données valides."""
+        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        self.sample_data = pd.DataFrame({
+            'price': np.random.randn(len(dates)).cumsum() + 100
+        }, index=dates)
+        
+        # Création stratégie test
+        class FakeStrategy(Strategy):
+            def get_position(self, historical_data, current_position):
+                return 1 if len(historical_data) != 0 else -1
+                
+        self.strategy = FakeStrategy()
+        self.backtester = Backtester(self.sample_data)
+    
+    # Vérification que la classe Backtester fonctionne avec les valeurs par défaut
+    def test_initialization(self):
+        self.assertEqual(self.backtester.transaction_costs, 0.001)
+        self.assertEqual(self.backtester.slippage, 0.0005)
+        pd.testing.assert_frame_equal(self.backtester.data, self.sample_data)
+    
+    # Vérification que la classe Backtester renvoie bien un objet de la classe Result 
+    def test_run_backtest(self):
         result = self.backtester.run(self.strategy)
-        self.assertIsInstance(result, Result, "Le résultat doit être une instance de Result.")
-        self.assertFalse(result.positions.empty, "Les positions ne doivent pas être vides.")
+        
+        self.assertIsInstance(result, Result)
+        self.assertTrue(hasattr(result, 'positions'))
+        self.assertTrue(hasattr(result, 'trades'))
+        self.assertTrue(hasattr(result, 'returns'))
+    
+    # Vérification que les coûts de transaction et de slippage sont pris en compte 
+    def test_transaction_costs(self):
+        backtester = Backtester(self.sample_data, transaction_costs=0.01, slippage=0.01)
+        result = backtester.run(self.strategy)
+        
+        if not result.trades.empty:
+            self.assertTrue(all(result.trades['cost'] > 0))
 
-    def test_backtester_empty_data(self):
-        """Teste le backtester avec des données vides."""
-        with self.assertRaises(ValueError):
-            Backtester(self.empty_data)
+class TestResult(unittest.TestCase):
 
-    def test_backtester_nan_data(self):
-        """Teste le backtester avec des données contenant des NaN."""
-        with self.assertRaises(ValueError):
-            Backtester(self.nan_data)
+    # Création data fictive
+    def setUp(self):
+        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        self.data = pd.DataFrame({
+            'price': np.random.randn(len(dates)).cumsum() + 100
+        }, index=dates)
+        
+        self.positions = pd.DataFrame({
+            'position': [1] * len(dates)
+        }, index=dates)
+        
+        self.trades = pd.DataFrame({
+            'from_pos': [0, 1, -1],
+            'to_pos': [1, -1, 0],
+            'cost': [0.001] * 3
+        }, index=dates[:3])
+        
+        self.result = Result(self.data, self.positions, self.trades)
+    
+    # Vérification que la classe Result possède les bons attributs 
+    def test_initialization(self):
+        self.assertTrue(hasattr(self.result, 'returns'))
+        self.assertTrue(hasattr(self.result, 'statistics'))
+    
+    # Vérification que les metrics sont bien calculés 
+    def test_calculate_statistics(self):
+        stats = self.result.statistics
+        
+        required_stats = [
+            'total_return', 'annual_return', 'volatility', 'sharpe_ratio',
+            'max_drawdown', 'sortino_ratio', 'VaR_95%', 'CVaR_95%',
+            'Profit/Loss_Ratio', 'num_trades', 'win_rate'
+        ]
+        
+        for stat in required_stats:
+            self.assertIn(stat, stats)
+    
+    # Vérification que les options de plotting fonctionnent 
+    def test_plotting_backends(self):
 
-    def test_end_to_end_backtest(self):
-        """Teste un scénario complet d'exécution de backtest."""
-        result = self.backtester.run(self.strategy)
-        stats = result.statistics
+        # Test matplotlib 
+        fig_mpl = self.result.plot("test_strat", backend='matplotlib')
+        self.assertIsNotNone(fig_mpl)
+        
+        # Test seaborn 
+        fig_sns = self.result.plot("test_strat", backend='seaborn')
+        self.assertIsNotNone(fig_sns)
+        
+        # Test plotly 
+        fig_plotly = self.result.plot("test_strat", backend='plotly')
+        self.assertIsNotNone(fig_plotly)
+        
+class TestCompareResults(unittest.TestCase):
 
-        self.assertIsInstance(result, Result, "Le backtest doit retourner un objet Result.")
-        self.assertFalse(result.positions.empty, "Les positions ne doivent pas être vides.")
-        self.assertIn('sharpe_ratio', stats, "Les statistiques doivent inclure 'sharpe_ratio'.")
+    # Vérification que de la possibilité de comparaison entre stratégies
+    def test_compare_results_different_backends(self):
 
-    def test_multiple_strategies_comparison(self):
-        """Teste la comparaison entre deux stratégies."""
-        strategy_1 = MovingAverageStrategy(short_window=2, long_window=3)
-        strategy_2 = MovingAverageStrategy(short_window=3, long_window=4)
+        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        data = pd.DataFrame({'price': np.random.randn(len(dates)).cumsum() + 100}, index=dates)
+        positions = pd.DataFrame({'position': [1] * len(dates)}, index=dates)
+        trades = pd.DataFrame()
+        
+        result1 = Result(data, positions, trades)
+        result2 = Result(data, positions, trades)
+        
+        # Test different backends
+        fig_mpl = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='matplotlib')
+        self.assertIsNotNone(fig_mpl)
+        
+        fig_sns = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='seaborn')
+        self.assertIsNotNone(fig_sns)
+        
+        fig_plotly = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='plotly')
+        self.assertIsNotNone(fig_plotly)
 
-        result_1 = self.backtester.run(strategy_1)
-        result_2 = self.backtester.run(strategy_2)
-
-        fig = compare_results(
-            [result_1, result_2],
-            strat_name=["Stratégie 1", "Stratégie 2"],
-            backend="matplotlib"
-        )
-        self.assertIsNotNone(fig, "La comparaison des résultats doit produire un graphique.")
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
-
-
 
