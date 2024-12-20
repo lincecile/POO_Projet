@@ -29,12 +29,22 @@ class MovingAverageStrategy(Strategy):
         self.target_column = target_column
 
     def validate_data(self, data: pd.DataFrame):
+    # Vérifie que l'objet est un DataFrame
+        if not isinstance(data, pd.DataFrame):
+            raise TypeError("Les données doivent être un DataFrame pandas.")
+    
+    # Vérifie si le DataFrame est vide
         if data.empty:
             raise ValueError("Les données sont vides.")
+    
+    # Vérifie la présence de la colonne cible
         if self.target_column not in data.columns:
-            raise KeyError(f"La colonne '{self.target_column}' est manquante.")
+            raise KeyError(f"La colonne cible '{self.target_column}' est manquante.")
+    
+    # Vérifie les valeurs nulles
         if data.isnull().any().any():
             raise ValueError("Les données contiennent des valeurs nulles.")
+
 
 
     def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:

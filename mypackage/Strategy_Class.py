@@ -49,4 +49,54 @@ def strategy(func):
     
     return WrappedStrategy
 
+class VolatilityBasedStrategy(Strategy):
+    """Stratégie basée sur la volatilité."""
+    
+    def __init__(self, volatility_threshold: float = 0.02, window_size: int = 10, rebalancing_frequency: str = 'D'):
+        super().__init__(rebalancing_frequency)
+        self.volatility_threshold = volatility_threshold
+        self.window_size = window_size
+        self.volatility = None
+
+    def fit(self, data: pd.DataFrame) -> None:
+        """
+        Calcule la volatilité sur une fenêtre donnée.
+        
+        Args:
+            data: DataFrame contenant les données historiques avec une colonne 'price'.
+        """
+        if 'price' not in data.columns:
+            raise ValueError("Les données historiques doivent contenir une colonne 'price'.")
+        
+        # Calculer les rendements journaliers
+        daily_returns = data['price'].pct_change()
+        
+        # Calculer la volatilité sur la fenêtre définie
+        self.volatility = daily_returns.rolling(window=self.window_size).std()
+    
+    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
+        """
+        Détermine la position en fonction de la volatilité.
+        
+        Args:
+            historical_data: DataFrame avec les données historiques.
+            current_position: Position actuelle.
+        
+        Returns:
+            float: Position désirée (-1 pour vendre, 1 pour acheter, 0 pour neutre).
+        """
+        if self.volatility is None:
+            raise ValueError("La méthode fit() doit être appelée avant get_position().")
+        
+        # Vérifier la dernière valeur de volatilité
+        current_volatility = self.volatility.iloc[-1]
+        if current_volatility is None or pd.isna(current_volatility):
+            return 0.0  # Neutre si volatilité non disponible
+        
+        # Prendre position selon la volatilité
+        if current_volatility > self.volatility_threshold:
+            return -1.0  # Vendre si la volatilité est élevée (risque élevé)
+        else:
+            return 1.0  # Acheter si la volatilité est faible (risque faible)
+
 
