@@ -101,6 +101,86 @@ class VolatilityBasedStrategy(Strategy):
         else:
             return 1.0  # Acheter si la volatilité est faible (risque faible)
 
+class MCOBasedStrategy(Strategy):
+    """Stratégie basée sur l'optimisation du coût moyen (MCO)."""
+
+    def __init__(self, threshold: float = 0.05, initial_position_cost= 0, rebalancing_frequency: str = 'D'):
+        """
+        Initialise la stratégie MCO.
+
+        Args:
+            threshold: Seuil relatif pour prendre une décision d'achat ou de vente (en pourcentage, ex: 0.05 pour 5%).
+            rebalancing_frequency: Fréquence de rééquilibrage.
+        """
+        super().__init__(rebalancing_frequency)
+        self.threshold = threshold
+        self.average_cost = None  # Coût moyen de la position
+        self.initial_position_cost = initial_position_cost
+
+    def fit(self, data: pd.DataFrame) -> None:
+        """
+        Initialise le coût moyen avec un coût existant ou estimé.
+
+        Args:
+            data: DataFrame contenant les données historiques avec une colonne 'price'.
+            initial_position_cost: Coût moyen initial de la position.
+        """
+        #if 'price' not in data.columns:
+        #    raise ValueError("Les données historiques doivent contenir une colonne 'price'.")
+
+        self.average_cost = self.initial_position_cost
+
+    def update_average_cost(self, executed_price: float, executed_quantity: float, current_position: float) -> None:
+        """
+        Met à jour le coût moyen en fonction des transactions exécutées.
+
+        Args:
+            executed_price: Prix auquel la transaction a été exécutée.
+            executed_quantity: Quantité achetée/vendue (positive pour achat, négative pour vente).
+            current_position: Position actuelle avant la transaction.
+        """
+        new_position = current_position + executed_quantity
+        if new_position == 0:   
+            self.average_cost = None  # Position fermée, pas de coût moyen
+        else:
+            self.average_cost = (
+                (self.average_cost * current_position + executed_price * executed_quantity) / new_position
+            )
+
+    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
+        """
+        Ajuste la position pour optimiser le coût moyen.
+
+        Args:
+            historical_data: DataFrame contenant les données historiques.
+            current_position: Position actuelle.
+
+        Returns:
+            float: Position désirée (-1 pour vendre, 1 pour acheter, 0 pour neutre).
+        """
+        if self.average_cost is None:
+            raise ValueError("Le coût moyen doit être initialisé avec la méthode fit().")
+
+        if historical_data.empty: # Neutre si pas de données
+            return 0.0  
+
+        current_price = historical_data[historical_data.columns[0]].iloc[-1]
+
+        if pd.isna(current_price): # Neutre si les données sont manquantes
+            return 0.0  
+        
+        # Calcul de l'écart relatif par rapport au coût moyen
+        price_deviation = (current_price - self.average_cost) / self.average_cost
+
+        
+        if price_deviation > self.threshold:        # Si le prix est bien supérieur au coût moyen, on vend
+            return -1.0                             # Vendre
+        elif price_deviation < -self.threshold:     # Si le prix est bien inférieur au coût moyen, on achète
+            return 1.0                              # Acheter
+        else:                                       # Neutre si le prix est proche du coût moyen
+            return 0.0                                  
+
+
 
 # Création des instances et exécution des backtests
 backtester = Backtester(data, transaction_costs=0.001, slippage=0.0005)
@@ -115,10 +195,13 @@ mom_strat_monthly = momentum_strategy(rebalancing_frequency='M')
 
 vol_strat_monthly = VolatilityBasedStrategy(0.02, 10, rebalancing_frequency='M')
 
+mco_strat_monthly = MCOBasedStrategy(0.02, initial_position_cost=0.1, rebalancing_frequency='M')
+
 strat1 = [ma_strat_default, ma_strat_weekly, ma_strat_monthly]
 strat2 = [mom_strat_daily, mom_strat_weekly, mom_strat_monthly]
-strat3 = [vol_strat_monthly]
+strat3 = [vol_strat_monthly,mco_strat_monthly]
 list_strat = strat1 + strat2 + strat3
+
 
 nom_strat = [obj.__name__ if hasattr(obj, '__name__') else obj.__class__.__name__ for obj in list_strat]
 
