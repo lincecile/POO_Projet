@@ -3,10 +3,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-def test_simple():
-    assert 1 + 1 == 2
-
-def test_has_method2():
+def test_has_method_consigne():
     assert hasattr(Strategy, "fit")
     assert hasattr(Strategy, "get_position")
 
@@ -48,7 +45,8 @@ class TestStrategy(unittest.TestCase):
                 
         strat = CustomStrategy()
         self.assertEqual(strat.get_position(self.sample_data, 0), -1)
-        
+
+
 class TestBacktester(unittest.TestCase):
 
     # Création data fictive

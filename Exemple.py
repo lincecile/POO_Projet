@@ -51,8 +51,6 @@ def momentum_strategy(historical_data, current_position, rebalancing_frequency='
     returns = historical_data[data.columns[0]].pct_change(20)
     return 1 if returns.iloc[-1] > 0 else -1
 
-#### 
-
 class VolatilityBasedStrategy(Strategy):
     """Stratégie basée sur la volatilité."""
     
