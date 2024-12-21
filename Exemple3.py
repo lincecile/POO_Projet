@@ -1,23 +1,21 @@
 import pandas as pd
 import numpy as np
-from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, strategy
+from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, strategy, DataFileReader
 import matplotlib.pyplot as plt
 
 filepath = 'data.parquet'
-#filepath = 'fichier_donnée.csv'
-try:
-    # Essayer de lire en tant que CSV
-    data = pd.read_csv(filepath, sep=';').replace(',', '.', regex=True)
-    data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
-    data.set_index('Date_Price', inplace=True)
-except Exception as e_csv:
-    try:
-        data = pd.read_parquet(filepath)
-    except Exception as e_parquet:
-        raise ValueError(f"Impossible de lire le fichier : {filepath}. "
-                            "Format non supporté ou fichier invalide.")
+filepath = 'fichier_donnée.csv'
 
-data = data.astype(float)
+# Initialiser le lecteur de fichiers
+reader = DataFileReader()
+
+# Utilisation basique - détection automatique de la colonne de date
+#data = reader.read_file(filepath)
+
+# Ou en spécifiant la colonne de date facultatif
+# Ou en spécifiant un format de date particulier
+reader = DataFileReader(date_format='%d/%m/%Y')
+data = reader.read_file(filepath, date_column='Date_Price')
 
 # Création d'une stratégie par héritage
 class MovingAverageCrossover(Strategy):
@@ -180,15 +178,11 @@ class MCOBasedStrategy(Strategy):
         else:                                       # Neutre si le prix est proche du coût moyen
             return 0.0                                  
 
-cost = 0.001
-liquidite = 0.0005
 
 # Création des instances et exécution des backtests
-backtester = Backtester(data, transaction_costs=cost, slippage=liquidite)
-
 ma_strat_default = MovingAverageCrossover(20, 50)
-ma_strat_weekly = MovingAverageCrossover(20, 50, rebalancing_frequency='W') # Weekly rebalancing
-ma_strat_monthly = MovingAverageCrossover(20, 50, rebalancing_frequency='M') # Monthly rebalancing
+ma_strat_weekly = MovingAverageCrossover(20, 50, rebalancing_frequency='W')     # Weekly rebalancing
+ma_strat_monthly = MovingAverageCrossover(20, 50, rebalancing_frequency='M')    # Monthly rebalancing
 
 mom_strat_daily = momentum_strategy(rebalancing_frequency='D')
 mom_strat_weekly = momentum_strategy(rebalancing_frequency='W')
