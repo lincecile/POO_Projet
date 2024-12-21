@@ -1,14 +1,5 @@
-# StrategyManager.py
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import List, Dict, Union
-from .Strategy_Class import Strategy, strategy
-from .Backtester_Class import Backtester
-from .Result_Class import Result, compare_results
-
-import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Dict, Tuple, Union, List
+from typing import Dict, Tuple, Union
 from .Strategy_Class import Strategy
 from .Backtester_Class import Backtester
 from .Result_Class import Result, compare_results
@@ -21,7 +12,7 @@ class Strategy_Manager:
     
     def __init__(self, data: pd.DataFrame, strategies_dict: Dict[str, Tuple[Strategy, float, float]] = None):
         """
-        Initialise le Strategy_Manager avec les données de marché et éventuellement un dictionnaire de stratégies.
+        Initialise le Strategy_Manager.
         
         Args:
             data: DataFrame contenant les données de marché.
@@ -37,7 +28,7 @@ class Strategy_Manager:
     
     def add_strategies_from_dict(self, strategies_dict: Dict[str, Tuple[Strategy, float, float]]) -> None:
         """
-        Ajouter plusieurs stratégies depuis un dictionnaire.
+        Ajoute des stratégies depuis un dictionnaire créé par l'utilisateur.
         
         Args:
             strategies_dict: Dictionnaire au format :
@@ -48,7 +39,7 @@ class Strategy_Manager:
         
     def add_strategy(self, name: str, strategy: Strategy, transaction_costs: float = 0.001, slippage: float = 0.0005) -> None:
         """
-        Ajouter une stratégie au gestionnaire.
+        Ajout d'une stratégie au gestionnaire.
         
         Args:
             name: Identifiant unique pour la stratégie.
@@ -56,8 +47,10 @@ class Strategy_Manager:
             transaction_costs: Coûts de transaction pour la stratégie.
             slippage: Coûts liés au slippage pour la stratégie.
         """
+
+        # Vérifie si une stratégie avec le même nom existe déjà
         if name in self.strategies:
-            raise ValueError(f"Strategy with name '{name}' already exists")
+            raise ValueError(f"Une stratégie existe déjà au nom de '{name}'")
         
         self.strategies[name] = (strategy, transaction_costs, slippage)
         
@@ -76,10 +69,11 @@ class Strategy_Manager:
     def run_backtests(self) -> None:
         """Exécute les backtests pour toutes les stratégies enregistrées."""
         self.results.clear()
-        
+
+        # Crée une instance de Backtester et exécute le backtest pour chaque stratégie
         for name, (strategy, costs, slip) in self.strategies.items():
             backtester = Backtester(self.data, transaction_costs=costs, slippage=slip)
-            self.results[name] = backtester.run(strategy)
+            self.results[name] = backtester.exec_backtest(strategy)
             
     def get_statistics(self, strategy_name: Union[str, None] = None) -> Union[Dict, pd.DataFrame]:
         """
@@ -89,22 +83,24 @@ class Strategy_Manager:
             strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
             
         Returns:
-            Dictionnaire des statistiques pour une stratégie ou DataFrame pour toutes les stratégies.
+            DataFrame des statistiques pour toutes les stratégies.
         """
         if not self.results:
-            raise ValueError("No results available. Run backtests first.")
+            raise ValueError("Il faut lancer le backtest d'abord.")
             
         if strategy_name is not None:
+
+            # Retourne les statistiques d'une stratégie spécifique
             if strategy_name not in self.results:
-                raise ValueError(f"No results found for strategy '{strategy_name}'")
+                raise ValueError(f"Pas de stratégie à ce nom : '{strategy_name}'")
             return self.results[strategy_name].statistics
-            
-        return pd.DataFrame([result.statistics for result in self.results.values()],
-                          index=self.results.keys())
+        
+        # Retourne un DataFrame contenant les statistiques de toutes les stratégies
+        return pd.DataFrame([result.statistics for result in self.results.values()], index=self.results.keys())
     
     def plot_strategy(self, strategy_name: str, backend: str = 'matplotlib', include_costs: bool = True) -> None:
         """
-        Tracer les résultats pour une stratégie spécifique.
+        Graphique des résultats pour une stratégie spécifique.
         
         Args:
             strategy_name: Nom de la stratégie à tracer.
@@ -112,7 +108,7 @@ class Strategy_Manager:
             include_costs: Inclure ou non les coûts de transaction dans la visualisation.
         """
         if strategy_name not in self.results:
-            raise ValueError(f"No results found for strategy '{strategy_name}'")
+            raise ValueError(f"Pas de backtest à ce nom : '{strategy_name}'")
             
         self.results[strategy_name].plot(
             name_strat=strategy_name,
@@ -122,7 +118,7 @@ class Strategy_Manager:
         
     def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
         """
-        Tracer les résultats pour toutes les stratégies.
+        Graphique des résultats pour toutes les stratégies.
         
         Args:
             backend: Backend de visualisation ('matplotlib', 'seaborn', ou 'plotly').
@@ -139,7 +135,7 @@ class Strategy_Manager:
             backend: Backend de visualisation ('matplotlib', 'seaborn', ou 'plotly').
         """
         if not self.results:
-            raise ValueError("No results available. Run backtests first.")
+            raise ValueError("Pas de backtest sur les stratégies.")
             
         fig = compare_results(
             list(self.results.values()),
@@ -152,7 +148,7 @@ class Strategy_Manager:
             
     def print_statistics(self, strategy_name: Union[str, None] = None) -> None:
         """
-        Afficher les statistiques pour une stratégie ou pour toutes les stratégies.
+        Afficher les statistiques pour toutes les stratégies.
         
         Args:
             strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
@@ -160,9 +156,9 @@ class Strategy_Manager:
         stats = self.get_statistics(strategy_name)
         
         if isinstance(stats, dict):
-            print(f"\nStatistics for strategy '{strategy_name}':")
+            print(f"\nStatistiques de la strategie '{strategy_name}':")
             for key, value in stats.items():
                 print(f"{key}: {value:.4f}")
         else:
-            print("\nStatistics for all strategies:")
+            print("\nStatistiques des stratégies:")
             print(stats.round(4))

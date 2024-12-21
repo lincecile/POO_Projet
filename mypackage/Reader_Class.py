@@ -1,17 +1,15 @@
 import pandas as pd
 from typing import Union, Optional
 from pathlib import Path
-import os
 
 class DataFileReader:
     """Une classe pour gérer la lecture de fichiers de données dans différents formats (CSV, Parquet)."""
     
     def __init__(self, date_format: str = '%d/%m/%Y'):
         """
-        Initialiser le DataFileReader.
+        Initialisation.
         
         Args:
-            date_column: Nom de la colonne contenant les dates.
             date_format: Format des dates dans les fichiers CSV.
         """
         self.date_format = date_format
@@ -31,10 +29,12 @@ class DataFileReader:
         """
         filepath = Path(filepath)
         
+        # Vérifie que le fichier existe
         if not filepath.exists():
             raise FileNotFoundError(f"Le fichier {filepath} n'existe pas.")
         
         try:
+            # Teste si c'est un fichier csv ou un parquet
             if filepath.suffix.lower() == '.csv':
                 data = self._read_csv(filepath, date_column)
             elif filepath.suffix.lower() == '.parquet':
@@ -42,7 +42,7 @@ class DataFileReader:
             else:
                 raise ValueError(f"Format de fichier non supporté: {filepath.suffix}")
             
-            # Vérifier si le DataFrame ne contient que des NaN
+            # Vérifie si le DataFrame ne contient que des NaN
             if data.shape[0] == 0 or data.isna().all().all():
                 raise ValueError(f"Le fichier {filepath} ne contient que des valeurs NaN ou est vide après le traitement.")
             
@@ -64,26 +64,25 @@ class DataFileReader:
     def _read_csv(self, filepath: Path, date_column: Optional[str] = None) -> pd.DataFrame:
         """Lire un fichier CSV."""
         try:
-            # Try reading with semicolon separator and replace commas in numbers
             data = pd.read_csv(filepath, sep=';').replace(',', '.', regex=True)
             
-            # If date_column is not specified, try to detect it or use first column
+            # Si la colonne de date n'est pas indiqué
             if date_column is None:
                 date_column = self._detect_date_column(data)
                 if date_column is None:
-                    date_column = data.columns[0]
+                    raise ValueError(f"Il faut une colonne de date dans le fichier")
             
-            # Convert date column
+            # Formattage de la colonne de date
             try:
                 data[date_column] = pd.to_datetime(data[date_column], format=self.date_format)
             except ValueError:
-                # If specific format fails, try automatic parsing
+                # Si le format des dates indiqué par l'utilisateur n'est pas correct
                 data[date_column] = pd.to_datetime(data[date_column])
             
-            # Set date as index and convert to float
+            # Les dates sont les indices du dataframe
             data.set_index(date_column, inplace=True)
             
-            # Convert all remaining columns to float
+            # Conversion des colonnes en float
             for col in data.columns:
                 data[col] = pd.to_numeric(data[col], errors='coerce')
             
@@ -97,13 +96,13 @@ class DataFileReader:
         try:
             data = pd.read_parquet(filepath)
             
-            # If date_column is not specified and the index is not already a datetime
+            # Si la colonne de date n'est pas indiqué et que les indices ne sont pas dates
             if date_column is not None and not isinstance(data.index, pd.DatetimeIndex):
                 if date_column in data.columns:
                     data.set_index(date_column, inplace=True)
                     data.index = pd.to_datetime(data.index)
             
-            # Convert all columns to float except datetime columns
+            # Conversion des colonnes en float
             for col in data.columns:
                 if not pd.api.types.is_datetime64_any_dtype(data[col]):
                     data[col] = pd.to_numeric(data[col], errors='coerce')

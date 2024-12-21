@@ -189,25 +189,30 @@ class MCOBasedStrategy(Strategy):
 # Création des instances et exécution des backtests
 ma_strat_default = MovingAverageCrossover(short_window=20, long_window=50)
 ma_strat_weekly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='W')     # Weekly rebalancing
-ma_strat_monthly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
+# ma_strat_monthly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
 
-mom_strat_daily = momentum_strategy(chosen_window=20,rebalancing_frequency='D')
-mom_strat_weekly = momentum_strategy(chosen_window=20, rebalancing_frequency='W')
-mom_strat_monthly = momentum_strategy(chosen_window=20, rebalancing_frequency='M')
+# mom_strat_daily = momentum_strategy(chosen_window=20,rebalancing_frequency='D')
+# mom_strat_weekly = momentum_strategy(chosen_window=20, rebalancing_frequency='W')
+# mom_strat_monthly = momentum_strategy(chosen_window=20, rebalancing_frequency='M')
 
-vol_strat_monthly = VolatilityBasedStrategy(volatility_threshold=0.02, window_size=10, rebalancing_frequency='M')
+# vol_strat_monthly = VolatilityBasedStrategy(volatility_threshold=0.02, window_size=10, rebalancing_frequency='M')
 
-mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10, rebalancing_frequency='M')
+# mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10, rebalancing_frequency='M')
+
+# dico_strat = {
+#     'ma_strat_default': (ma_strat_default, 0.002, 0.0005),
+#     'ma_strat_weekly': (ma_strat_weekly, 0.01, 0.004),
+#     'ma_strat_monthly': (ma_strat_monthly, 0.005, 0.003),
+#     'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
+#     'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
+#     'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
+#     'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
+#     'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
+# }
 
 dico_strat = {
     'ma_strat_default': (ma_strat_default, 0.002, 0.0005),
-    'ma_strat_weekly': (ma_strat_weekly, 0.01, 0.004),
-    'ma_strat_monthly': (ma_strat_monthly, 0.005, 0.003),
-    'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
-    'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
-    'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
-    'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
-    'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
+    'ma_strat_default2': (ma_strat_default, 0.002, 0.0005),
 }
 
 manager = Strategy_Manager(data,dico_strat)

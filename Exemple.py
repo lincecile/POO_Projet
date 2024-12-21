@@ -214,7 +214,7 @@ results_dict = {}
 for name, (strat, cost, liquidite) in dico_strat.items():
     # Exécuter le backtest pour chaque stratégie et stocker le résultat dans le dictionnaire
     backtester = Backtester(data, transaction_costs=cost, slippage=liquidite)
-    results_dict[name] = backtester.run(strat)
+    results_dict[name] = backtester.exec_backtest(strat)
 
     # Affichage des statistiques
     print(f"Statistiques de la stratégie {name}:")

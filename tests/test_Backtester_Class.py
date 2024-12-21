@@ -5,7 +5,7 @@ import numpy as np
 
 # Vérification que la classe possède une méthode pour exécuter le backtest
 def test_has_method():
-    assert hasattr(Backtester, "run")
+    assert hasattr(Backtester, "exec_backtest")
 
 class TestBacktester(unittest.TestCase):
 
@@ -38,7 +38,7 @@ class TestBacktester(unittest.TestCase):
 
     # Vérification que la classe Backtester renvoie bien un objet de la classe Result 
     def test_run_backtest(self):
-        result = self.backtester.run(self.strategy)
+        result = self.backtester.exec_backtest(self.strategy)
         
         self.assertIsInstance(result, Result, "Le résultat doit être une instance de Result.")
         self.assertTrue(hasattr(result, 'positions'))
@@ -48,7 +48,7 @@ class TestBacktester(unittest.TestCase):
     # Vérification que les coûts de transaction et de slippage sont pris en compte 
     def test_transaction_costs(self):
         backtester = Backtester(self.sample_data, transaction_costs=0.01, slippage=0.01)
-        result = backtester.run(self.strategy)
+        result = backtester.exec_backtest(self.strategy)
         
         if not result.trades.empty:
             self.assertTrue(all(result.trades['cost'] > 0))
