@@ -35,25 +35,18 @@ class Result:
         """Calcule les statistiques de performance."""
         
         total_return = (1 + self.returns).prod() - 1                                    # Performance total
-        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1             # Performance annualisé
+        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1           # Performance annualisé
         volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
 
         sharpe_ratio = annual_return / volatility if volatility != 0 else 0             # Ratio de Sharpe
         
         cumulative_returns = (1 + self.returns).cumprod()
         drawdowns = cumulative_returns / cumulative_returns.cummax() - 1
-        max_drawdown = drawdowns.min()
-
-        
+        max_drawdown = drawdowns.min()        
 
         downside_returns = self.returns[self.returns < 0]
-        downside_deviation = (
-        np.sqrt((downside_returns ** 2).mean()) * np.sqrt(252)
-        if not downside_returns.empty
-        else 0
-        )
+        downside_deviation = (np.sqrt((downside_returns ** 2).mean()) * np.sqrt(252) if not downside_returns.empty else 0)
         sortino_ratio = annual_return / downside_deviation if downside_deviation != 0 else np.nan
-        
 
         var_95 = np.percentile(self.returns, 5)                                         # VaR (Value at Risk) à 95%
 
@@ -164,7 +157,6 @@ def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'
 
     stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name).fillna(0)
 
-    print("============", stats_comparison.index)
     if backend == 'matplotlib':
         fig, ax = plt.subplots(figsize=(12, 6))
         stats_comparison.plot(kind='bar', ax=ax)

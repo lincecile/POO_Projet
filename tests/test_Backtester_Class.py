@@ -3,6 +3,10 @@ import unittest
 import pandas as pd
 import numpy as np
 
+# Vérification que la classe possède une méthode pour exécuter le backtest
+def test_has_method():
+    assert hasattr(Backtester, "run")
+
 class TestBacktester(unittest.TestCase):
 
     # Création data fictive
@@ -31,10 +35,6 @@ class TestBacktester(unittest.TestCase):
         self.assertEqual(self.backtester.transaction_costs, 0.001)
         self.assertEqual(self.backtester.slippage, 0.0005)
         pd.testing.assert_frame_equal(self.backtester.data, self.sample_data)
-    
-    # Vérification que la classe possède une méthode pour exécuter le backtest
-    def test_has_method():
-        assert hasattr(Backtester, "run")
 
     # Vérification que la classe Backtester renvoie bien un objet de la classe Result 
     def test_run_backtest(self):

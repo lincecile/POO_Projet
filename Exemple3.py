@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from mypackage import Strategy, Backtester, compare_results, strategy
+from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, strategy
 import matplotlib.pyplot as plt
 
 filepath = 'data.parquet'
@@ -180,7 +180,11 @@ class MCOBasedStrategy(Strategy):
         else:                                       # Neutre si le prix est proche du coût moyen
             return 0.0                                  
 
+cost = 0.001
+liquidite = 0.0005
+
 # Création des instances et exécution des backtests
+backtester = Backtester(data, transaction_costs=cost, slippage=liquidite)
 
 ma_strat_default = MovingAverageCrossover(20, 50)
 ma_strat_weekly = MovingAverageCrossover(20, 50, rebalancing_frequency='W') # Weekly rebalancing
@@ -194,8 +198,6 @@ vol_strat_monthly = VolatilityBasedStrategy(0.02, 10, rebalancing_frequency='M')
 
 mco_strat_monthly = MCOBasedStrategy(0.02, initial_position_cost=0.1, rebalancing_frequency='M')
 
-# Dictionnaire des stratégies avec leurs coûts et liquidités 
-# dico = {nom:(strat,cout de transaction, liquidité)}
 dico_strat = {
     'ma_strat_default': (ma_strat_default, 0.002, 0.0005),
     'ma_strat_weekly': (ma_strat_weekly, 0.01, 0.004),
@@ -207,26 +209,22 @@ dico_strat = {
     'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
 }
 
-type_graph = 'plotly'#'plotly'#'seaborn'#'matplotlib'
+manager = Strategy_Manager(data,dico_strat)
 
-results_dict = {}
+# Run all backtests
+manager.run_backtests()
 
-for name, (strat, cost, liquidite) in dico_strat.items():
-    # Exécuter le backtest pour chaque stratégie et stocker le résultat dans le dictionnaire
-    backtester = Backtester(data, transaction_costs=cost, slippage=liquidite)
-    results_dict[name] = backtester.run(strat)
+# Print statistics for all strategies
+manager.print_statistics()
 
-    # Affichage des statistiques
-    print(f"Statistiques de la stratégie {name}:")
-    for key, value in results_dict[name].statistics.items():
-        print(f"{key}: {value:.4f}")
+# Visualize results
+backend = 'plotly' # 'plotly' # 'matplotlib' # 'seaborn'
 
-# Visualisation des résultats
-for strat_name, strat in results_dict.items():
-    strat.plot(name_strat = strat_name, backend=type_graph)
+# Plot individual strategies
+manager.plot_all_strategies(backend=backend)
 
-# Comparaison des stratégies
-compare_results(results_dict.values(), strat_name=list(dico_strat.keys()), backend=type_graph).show()
+# Compare all strategies
+manager.compare_strategies(backend=backend)
 
-# afin de garder les fenetres graphiques ouvertes sur vscode
+# Keep matplotlib windows open in VSCode
 plt.show()

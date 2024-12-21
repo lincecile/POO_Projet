@@ -56,5 +56,5 @@ class Backtester:
         
         positions_df = pd.DataFrame(positions).set_index('timestamp')
         trades_df = pd.DataFrame(trades).set_index('timestamp') if trades else pd.DataFrame()
-        print(trades_df)
+
         return Result(self.data, positions_df, trades_df)
