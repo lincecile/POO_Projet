@@ -4,6 +4,7 @@ from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, s
 import matplotlib.pyplot as plt
 
 filepath = 'data.parquet'
+filepath = 'fichier_donnée_vide.csv'
 filepath = 'fichier_donnée.csv'
 
 # Initialiser le lecteur de fichiers
@@ -27,26 +28,32 @@ class MovingAverageCrossover(Strategy):
 
     def get_position(self, historical_data, current_position):
         if len(historical_data) < self.long_window:
-            return 0
+            return np.nan
         
         short_ma = historical_data[data.columns[0]].rolling(self.short_window).mean()
         long_ma = historical_data[data.columns[0]].rolling(self.long_window).mean()
         
-        if short_ma.iloc[-1] > long_ma.iloc[-1]:
-            return 1
-        else:
-            return -1
-    
-    @property
-    def __name__(self):
-        return f"{self.__class__.__name__}_{self.rebalancing_frequency}"
+        return 1 if short_ma.iloc[-1] > long_ma.iloc[-1] else -1
 
 # Création d'une stratégie simple avec décorateur
 @strategy
-def momentum_strategy(historical_data, current_position, rebalancing_frequency='D'):
-    if len(historical_data) < 20:
+def momentum_strategy(historical_data, current_position, rebalancing_frequency, chosen_window=20):
+    """
+    Calcule un signal de trading basé sur le momentum.
+    
+    Args:
+        historical_data: DataFrame avec les données historiques
+        current_position: Position actuelle
+        rebalancing_frequency: Fréquence de rebalancement
+        chosen_window: Fenêtre de calcul du momentum (défaut: 20 périodes)
+    
+    Returns:
+        int: 1 pour position longue, -1 pour position courte
+    """
+    if len(historical_data) < chosen_window:
         return 0
-    returns = historical_data[data.columns[0]].pct_change(20)
+    
+    returns = historical_data[historical_data.columns[0]].pct_change(chosen_window)
     return 1 if returns.iloc[-1] > 0 else -1
 
 class VolatilityBasedStrategy(Strategy):
@@ -180,17 +187,17 @@ class MCOBasedStrategy(Strategy):
 
 
 # Création des instances et exécution des backtests
-ma_strat_default = MovingAverageCrossover(20, 50)
-ma_strat_weekly = MovingAverageCrossover(20, 50, rebalancing_frequency='W')     # Weekly rebalancing
-ma_strat_monthly = MovingAverageCrossover(20, 50, rebalancing_frequency='M')    # Monthly rebalancing
+ma_strat_default = MovingAverageCrossover(short_window=20, long_window=50)
+ma_strat_weekly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='W')     # Weekly rebalancing
+ma_strat_monthly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
 
-mom_strat_daily = momentum_strategy(rebalancing_frequency='D')
-mom_strat_weekly = momentum_strategy(rebalancing_frequency='W')
-mom_strat_monthly = momentum_strategy(rebalancing_frequency='M')
+mom_strat_daily = momentum_strategy(chosen_window=20,rebalancing_frequency='D')
+mom_strat_weekly = momentum_strategy(chosen_window=20, rebalancing_frequency='W')
+mom_strat_monthly = momentum_strategy(chosen_window=20, rebalancing_frequency='M')
 
-vol_strat_monthly = VolatilityBasedStrategy(0.02, 10, rebalancing_frequency='M')
+vol_strat_monthly = VolatilityBasedStrategy(volatility_threshold=0.02, window_size=10, rebalancing_frequency='M')
 
-mco_strat_monthly = MCOBasedStrategy(0.02, initial_position_cost=0.1, rebalancing_frequency='M')
+mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10, rebalancing_frequency='M')
 
 dico_strat = {
     'ma_strat_default': (ma_strat_default, 0.002, 0.0005),

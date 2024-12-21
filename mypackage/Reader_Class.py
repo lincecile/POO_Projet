@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Union, Optional
 from pathlib import Path
+import os
 
 class DataFileReader:
     """Une classe pour gérer la lecture de fichiers de données dans différents formats (CSV, Parquet)."""
@@ -32,14 +33,21 @@ class DataFileReader:
         
         if not filepath.exists():
             raise FileNotFoundError(f"Le fichier {filepath} n'existe pas.")
-            
+        
         try:
             if filepath.suffix.lower() == '.csv':
-                return self._read_csv(filepath, date_column)
+                data = self._read_csv(filepath, date_column)
             elif filepath.suffix.lower() == '.parquet':
-                return self._read_parquet(filepath, date_column)
+                data = self._read_parquet(filepath, date_column)
             else:
                 raise ValueError(f"Format de fichier non supporté: {filepath.suffix}")
+            
+            # Vérifier si le DataFrame ne contient que des NaN
+            if data.shape[0] == 0 or data.isna().all().all():
+                raise ValueError(f"Le fichier {filepath} ne contient que des valeurs NaN ou est vide après le traitement.")
+            
+            return data
+        
         except Exception as e:
             raise ValueError(f"Impossible de lire le fichier {filepath}: {str(e)}")
     

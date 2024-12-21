@@ -37,11 +37,12 @@ def strategy(func):
     """Décorateur pour créer une stratégie simple à partir d'une fonction."""
     
     class WrappedStrategy(Strategy):
-        def __init__(self, rebalancing_frequency='D'):
+        def __init__(self, rebalancing_frequency='D', **kwargs):
             super().__init__(rebalancing_frequency=rebalancing_frequency)
+            self.kwargs = kwargs
             
         def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
-            return func(historical_data, current_position, self.rebalancing_frequency)
+            return func(historical_data, current_position, self.rebalancing_frequency, **self.kwargs)
         
         @property
         def __name__(self):
