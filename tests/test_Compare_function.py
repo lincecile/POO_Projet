@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.figure
 import plotly.graph_objects as go
-import seaborn.axisgrid as sns_axisgrid
+import matplotlib.axes
 
 class TestCompareResults(unittest.TestCase):
 
@@ -25,7 +25,7 @@ class TestCompareResults(unittest.TestCase):
         self.assertIsInstance(fig_mpl, matplotlib.figure.Figure, "Le backend 'matplotlib' doit retourner un objet de type 'matplotlib.figure.Figure'.")
 
         fig_sns = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='seaborn')
-        self.assertIsInstance(fig_sns, sns_axisgrid.PairGrid, "Le backend 'matplotlib' doit retourner un objet de type 'matplotlib.figure.Figure'.")
+        self.assertIsInstance(fig_sns, matplotlib.figure.Figure, "Le backend 'seaborn' doit retourner un objet de type 'matplotlib.figure.Figure'.")
 
         fig_plotly = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='plotly')
         self.assertIsInstance(fig_plotly, go.Figure, "Le backend 'plotly' doit retourner un objet de type 'plotly.graph_objects.Figure'.")

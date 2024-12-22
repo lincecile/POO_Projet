@@ -107,7 +107,6 @@ class Result:
             ax2.grid(True)
             
             plt.tight_layout()
-            return fig
             
         elif backend == 'seaborn':
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
@@ -119,7 +118,6 @@ class Result:
             ax2.set_title('Positions')
             
             plt.tight_layout()
-            return fig
             
         elif backend == 'plotly':
             # Créer une figure avec deux sous-graphiques
@@ -153,7 +151,7 @@ class Result:
                 title_text=f'Résultats du Backtest {name_strat}'
             )
 
-            return fig
+        return fig
         
 def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
@@ -168,7 +166,6 @@ def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'
         ax.set_title('Comparaison des stratégies')
         plt.tight_layout()
         plt.xticks(rotation=0, ha='right', fontsize=10)
-        return fig
     
     elif backend == 'seaborn':
         fig, ax = plt.subplots(figsize=(12, 6))
@@ -187,7 +184,6 @@ def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'
         )
         ax.set_title('Comparaison des stratégies')
         plt.tight_layout()
-        return fig
     
     elif backend == 'plotly':
         fig = go.Figure()
@@ -205,4 +201,4 @@ def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'
             height=600
         )
         
-        return fig
+    return fig
