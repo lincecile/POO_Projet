@@ -151,22 +151,35 @@ class Result:
                 title_text=f'Résultats du Backtest {name_strat}'
             )
 
+            fig.show()
+
         return fig
         
-def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'):
+def compare_results(results: dict, liste_sep : list, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
 
     # Statistiques de performance de chaque stratégie
-    stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name)
+    stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
+
+    # Statistiques pour chaque dictionnaire
+    stats_comparison_sep = stats_comparison[liste_sep]
+    stats_comparison_without_sep = stats_comparison.drop(columns=liste_sep)
 
     if backend == 'matplotlib':
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax1 = plt.subplots(figsize=(12, 6))
+        ax2 = ax1.twinx()
 
-        stats_comparison.plot(kind='bar', ax=ax)
-        ax.set_title('Comparaison des stratégies')
+        # Graphique sur le premier axe Y (ax1)
+        stats_comparison_without_sep.plot(kind='bar', ax=ax1)
+        stats_comparison_sep.plot(kind='bar', ax=ax2)
+
+        ax1.set_title('Comparaison des stratégies')
+        ax1.set_ylabel('Métriques 1')
+        ax1.set_xticklabels(results.keys(), rotation=0, ha='right', fontsize=10)
+        ax2.set_ylabel('Métriques 2')
+        
         plt.tight_layout()
-        plt.xticks(rotation=0, ha='right', fontsize=10)
-    
+        
     elif backend == 'seaborn':
         fig, ax = plt.subplots(figsize=(12, 6))
 

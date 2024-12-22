@@ -225,9 +225,8 @@ class Strategy_Manager:
                 height=600
             )
             
-            if backend == 'plotly':
-                fig_returns.show()
-                fig_positions.show()
+            fig_returns.show()
+            fig_positions.show()
 
     def compare_strategies(self, backend: str = 'matplotlib') -> None:
         """
@@ -238,12 +237,9 @@ class Strategy_Manager:
         """
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
-            
-        fig = compare_results(
-            list(self.results.values()),
-            list(self.strategies.keys()),
-            backend=backend
-        )
+        
+        liste = ['num_trades']
+        fig = compare_results(self.results,liste_sep=liste,backend=backend)
         
         if backend == 'plotly':
             fig.show()
