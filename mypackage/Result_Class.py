@@ -13,18 +13,31 @@ class Result:
         self.positions = positions
         self.trades = trades
         self.returns = self._calculate_returns()
-        self.statistics = self._calculate_statistics()
-    
-    def _calculate_returns(self) -> pd.Series:
-        """Calcul des rendements de la stratégie"""
-        price_returns = self.data[self.data.columns[0]].pct_change()
-        strategy_returns = price_returns * self.positions['position'].shift(1)
         
-        # Prise en compte du coût de l'opération
-        if not self.trades.empty:
-            strategy_returns -= self.trades['cost']
+        statistics = self._calculate_statistics()
+        self.statistics = {key: series['portfolio'] for key, series in statistics.items()}
+        self.statistics_each_asset = {key: series.drop('portfolio') for key, series in statistics.items()}
         
-        return strategy_returns.fillna(0)
+    def _calculate_returns(self) -> pd.DataFrame:
+        """Calcul des rendements de la stratégie pour chaque actif"""
+        returns = pd.DataFrame(index=self.positions.index)
+        
+        for asset in self.positions.columns:
+            price_returns = self.data[asset].pct_change()
+            strategy_returns = price_returns * self.positions[asset].shift(1)
+            
+            # Prise en compte des coûts si des trades existent pour cet actif
+            if not self.trades.empty:
+                asset_trades = self.trades[self.trades['asset'] == asset]
+                if not asset_trades.empty:
+                    strategy_returns.loc[asset_trades.index] -= asset_trades['cost']
+                    
+            returns[asset] = strategy_returns.fillna(0)
+        
+        # Ajout d'une colonne pour le rendement total du portefeuille
+        returns['portfolio'] = returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
+        
+        return returns
     
     def _calculate_statistics(self) -> dict:
         """Calcul des statistiques de performance de la stratégie"""
@@ -33,7 +46,8 @@ class Result:
         annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1           # Performance annualisé
         volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
 
-        sharpe_ratio = annual_return / volatility if volatility != 0 else 0             # Ratio de Sharpe
+        # Ratio de Sharpe
+        sharpe_ratio = pd.Series([an_return / vol if vol != 0 else 0 for an_return, vol in zip(annual_return, volatility)], index=annual_return.index)
         
         # Maximum Drawdown
         cumulative_returns = (1 + self.returns).cumprod()
@@ -43,10 +57,10 @@ class Result:
         # Ratio de Sortino
         downside_returns = self.returns[self.returns < 0]
         downside_deviation = (np.sqrt((downside_returns ** 2).mean()) * np.sqrt(252) if not downside_returns.empty else 0)
-        sortino_ratio = annual_return / downside_deviation if downside_deviation != 0 else np.nan
+        sortino_ratio = pd.Series([an_return / dev if dev != 0 else np.nan for an_return, dev in zip(annual_return, downside_deviation)], index=annual_return.index)
         
         # VaR (Value at Risk) à 95%
-        var_95 = np.percentile(self.returns, 5)                                        
+        var_95 = self.returns.apply(lambda col: col.quantile(0.05))
 
         # CVaR (Conditional Value at Risk) à 95%
         cvar_95 = self.returns[self.returns <= var_95].mean() if len(self.returns[self.returns <= var_95]) > 0 else 0
@@ -54,15 +68,17 @@ class Result:
         # Gain/Pertes moyen (Profit/Loss Ratio)
         avg_gain = self.returns[self.returns > 0].mean() if len(self.returns[self.returns > 0]) > 0 else 0
         avg_loss = self.returns[self.returns < 0].mean() if len(self.returns[self.returns < 0]) > 0 else 0
-        profit_loss_ratio = abs(avg_gain / avg_loss) if avg_loss != 0 else np.nan
-
+        profit_loss_ratio = pd.Series([abs(avg_g / avg_l) if avg_l != 0 else np.nan for avg_g, avg_l in zip(avg_gain, avg_loss)], index=avg_gain.index)
+        
         # Pourcentage de trades gagnants
-        win_rate = (self.returns[self.returns > 0].count() / self.returns[self.returns != 0].count() if self.returns[self.returns != 0].count() > 0 else 0)
+        win_rate = self.returns.apply(lambda col: col[col > 0].count() / col[col != 0].count() if col[col != 0].count() > 0 else 0)
 
         # Facteur de profitabilité
-        total_gain = self.returns[self.returns > 0].sum()
-        total_loss = self.returns[self.returns < 0].sum()
-        profit_factor = abs(total_gain / total_loss) if total_loss != 0 else 1
+        profit_factor = self.returns.apply(lambda col: abs(col[col > 0].sum() / col[col < 0].sum()) if col[col < 0].sum() != 0 else 1)
+
+        # Nombre de trades
+        nb_trade = self.trades['asset'].value_counts()
+        nb_trade['portfolio'] = nb_trade.sum()
 
         return {
             'total_return': total_return,
@@ -75,7 +91,7 @@ class Result:
             'VaR_95%': var_95,
             'CVaR_95%': cvar_95,
             'Profit/Loss_Ratio': profit_loss_ratio,
-            'num_trades': len(self.trades),
+            'num_trades': nb_trade,
             'win_rate': win_rate  
         }
     

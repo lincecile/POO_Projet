@@ -16,6 +16,8 @@ reader = DataFileReader()
 # Ou en spécifiant un format de date particulier
 reader = DataFileReader(date_format='%d/%m/%Y')
 data = reader.read_file(filepath, date_column='Date_Price')
+data = data[data.columns.to_list()[:2]]
+all_asset = data.columns.to_list()
 
 # Création d'une stratégie par héritage
 class MovingAverageCrossover(Strategy):
@@ -33,6 +35,37 @@ class MovingAverageCrossover(Strategy):
         long_ma = historical_data[data.columns[0]].rolling(self.long_window).mean()
         
         return 1 if short_ma.iloc[-1] > long_ma.iloc[-1] else -1
+
+class MovingAverageCrossover(Strategy):
+    """Stratégie de croisement de moyennes mobiles pour plusieurs actifs."""
+    
+    def __init__(self, assets, short_window=20, long_window=50, rebalancing_frequency='D', 
+                 allocation_method='equal'):
+        super().__init__(rebalancing_frequency=rebalancing_frequency, assets=assets)
+        self.short_window = short_window
+        self.long_window = long_window
+        self.allocation_method = allocation_method
+
+    def get_position(self, historical_data, current_position):
+        if len(historical_data) < self.long_window:
+            return {asset: 0 for asset in self.assets}
+        
+        signals = {}
+        for asset in self.assets:
+            short_ma = historical_data[asset].rolling(self.short_window).mean()
+            long_ma = historical_data[asset].rolling(self.long_window).mean()
+            signals[asset] = 1 if short_ma.iloc[-1] > long_ma.iloc[-1] else -1
+        
+        # Allocation des positions selon la méthode choisie
+        if self.allocation_method == 'equal':
+            position_size = 1.0 / len(self.assets)
+            positions = {asset: signal * position_size for asset, signal in signals.items()}
+        else:  # 'signal_weighted'
+            total_signals = sum(abs(signal) for signal in signals.values())
+            positions = {asset: signal / total_signals for asset, signal in signals.items()}
+            
+        return positions
+
 
 # Création d'une stratégie simple avec décorateur
 @strategy
@@ -187,9 +220,9 @@ class MCOBasedStrategy(Strategy):
 
 
 # Création des instances et exécution des backtests
-ma_strat_default = MovingAverageCrossover(short_window=20, long_window=50)
-ma_strat_weekly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='W')     # Weekly rebalancing
-ma_strat_monthly = MovingAverageCrossover(short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
+ma_strat_default = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50)
+ma_strat_weekly = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50, rebalancing_frequency='W')     # Weekly rebalancing
+ma_strat_monthly = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
 
 mom_strat_daily = momentum_strategy(chosen_window=20,rebalancing_frequency='D')
 mom_strat_weekly = momentum_strategy(chosen_window=20, rebalancing_frequency='W')
@@ -200,14 +233,14 @@ vol_strat_monthly = VolatilityBasedStrategy(volatility_threshold=0.02, window_si
 mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10, rebalancing_frequency='M')
 
 dico_strat = {
-    'ma_strat_default': (ma_strat_default, 0.002, 0.0005),
-    'ma_strat_weekly': (ma_strat_weekly, 0.01, 0.004),
-    'ma_strat_monthly': (ma_strat_monthly, 0.005, 0.003),
-    'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
-    'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
-    'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
-    'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
-    'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
+    'ma_strat_default': (ma_strat_default, None, None),
+    'ma_strat_weekly': (ma_strat_weekly, None, None),
+    # 'ma_strat_monthly': (ma_strat_monthly, None, None),
+    # 'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
+    # 'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
+    # 'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
+    # 'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
+    # 'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
 }
 
 manager = Strategy_Manager(data,dico_strat)
@@ -217,9 +250,10 @@ manager.run_backtests()
 
 # Print statistics for all strategies
 manager.print_statistics()
+manager.print_statistics(strategy_name="ma_strat_default")
 
 # Visualize results
-backend = 'plotly' # 'plotly' # 'matplotlib' # 'seaborn'
+backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
 
 # Plot individual strategies
 manager.plot_all_strategies(backend=backend)

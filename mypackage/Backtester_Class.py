@@ -5,10 +5,18 @@ from .Strategy_Class import Strategy
 class Backtester:
     """Classe pour exécuter les backtests."""
     
-    def __init__(self, data: pd.DataFrame, transaction_costs: float = 0.001, slippage: float = 0.0005):
+    def __init__(self, data: pd.DataFrame, transaction_costs: dict = None, slippage: dict = None):
+        """
+        Initialise le backtester multi-actifs.
+        
+        Args:
+            data: DataFrame avec les données de tous les actifs
+            transaction_costs: Dictionnaire des coûts de transaction par actif
+            slippage: Dictionnaire du slippage par actif
+        """
         self.data = data
-        self.transaction_costs = transaction_costs
-        self.slippage = slippage
+        self.transaction_costs = transaction_costs or {col: 0.001 for col in data.columns}
+        self.slippage = slippage or {col: 0.0005 for col in data.columns}
     
     def exec_backtest(self, strategy: Strategy) -> Result:
         """
@@ -21,7 +29,7 @@ class Backtester:
             Result: Résultats du backtest
         """
         positions = []
-        current_position = 0
+        current_position = {asset: 0 for asset in strategy.assets}
         trades = []
         
         # Rééchantillonnage des données selon la fréquence de rééquilibrage
@@ -37,23 +45,26 @@ class Backtester:
             new_position = strategy.get_position(historical_data, current_position)
             
             # Si la position change, on enregistre le trade et son coût
-            if new_position != current_position:
-                trade_cost = abs(new_position - current_position) * (self.transaction_costs + self.slippage)
-                trades.append({
-                    'timestamp': timestamp,
-                    'from_pos': current_position,
-                    'to_pos': new_position,
-                    'cost': trade_cost
-                })
-            
+            for asset in strategy.assets:
+                if new_position[asset] != current_position[asset]:
+                    trade_cost = (abs(new_position[asset] - current_position[asset]) * 
+                                (self.transaction_costs[asset] + self.slippage[asset]))
+                    trades.append({
+                        'timestamp': timestamp,
+                        'asset': asset,
+                        'from_pos': current_position[asset],
+                        'to_pos': new_position[asset],
+                        'cost': trade_cost
+                    })
+
             # Ajout de la position au timestamp t, que la position ait changé ou non
             positions.append({
                 'timestamp': timestamp,
-                'position': new_position
+                **{f"{asset}": new_position[asset] for asset in strategy.assets}
             })
 
             # Mise à jour la position actuelle pour la prochaine itération
-            current_position = new_position
+            current_position = new_position.copy()
         
         # Tableau de position
         positions_df = pd.DataFrame(positions).set_index('timestamp')

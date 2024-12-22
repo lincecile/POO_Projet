@@ -4,11 +4,12 @@ import pandas as pd
 class Strategy(ABC):
     """Classe abstraite de base pour les stratégies de trading."""
     
-    def __init__(self, rebalancing_frequency: str = 'D'):
+    def __init__(self, rebalancing_frequency: str = 'D', assets: list = None):
         self.rebalancing_frequency = rebalancing_frequency      # fréquence de rééquilibrage pour chaque stratégie
-    
+        self.assets = assets or []                              # Liste des actifs
+
     @abstractmethod 
-    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
+    def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
         """
         Calcule la position désirée basée sur les données historiques.
         
@@ -30,12 +31,12 @@ def strategy(func):
     """Décorateur pour créer une stratégie simple à partir d'une fonction."""
     
     class WrappedStrategy(Strategy):
-        def __init__(self, rebalancing_frequency='D', **kwargs):
+        def __init__(self, rebalancing_frequency='D', assets=None, **kwargs):
             super().__init__(rebalancing_frequency=rebalancing_frequency)
             self.kwargs = kwargs
             
-        def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
-            return func(historical_data, current_position, self.rebalancing_frequency, **self.kwargs)
+        def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
+            return func(historical_data, current_position, self.assets, self.rebalancing_frequency, **self.kwargs)
         
         @property
         def __name__(self):

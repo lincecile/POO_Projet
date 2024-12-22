@@ -92,6 +92,7 @@ class Strategy_Manager:
         if not self.results:
             raise ValueError("Il faut lancer le backtest d'abord.")
             
+        # Pour une stratégie particuliere
         if strategy_name is not None:
 
             # Retourne les statistiques d'une stratégie spécifique
@@ -120,7 +121,7 @@ class Strategy_Manager:
             include_costs=include_costs
         )
     
-    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
+    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = False) -> None:
         """
         Crée deux graphiques distincts:
         1. Un graphique avec toutes les courbes de rendements cumulés
@@ -141,11 +142,15 @@ class Strategy_Manager:
                 if include_costs:
                     cumulative_returns = (1 + result.returns).cumprod()
                 else:
-                    price_returns = self.data[self.data.columns[0]].pct_change()
-                    cumulative_returns = (1 + price_returns * result.positions['position'].shift(1)).cumprod()
+                    price_returns = self.data.pct_change()
+                    cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
+                    for column in result.positions.columns:  # Parcourir chaque actif
+                        # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
+                        cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
                 
-                plt.plot(cumulative_returns.index, cumulative_returns.values, label=name)
-            
+                for column in cumulative_returns.columns:
+                    plt.plot(cumulative_returns.index, cumulative_returns[column], label=f"{name} - {column}")
+
             plt.title('Rendements cumulatifs')
             plt.grid(True)
             plt.legend()
@@ -153,7 +158,8 @@ class Strategy_Manager:
             # Graphique des positions
             plt.figure(figsize=(12, 6))
             for name, result in self.results.items():
-                plt.plot(result.positions.index, result.positions['position'].values, label=name)
+                for column in result.positions.columns:  # Parcourir chaque colonne (actif)
+                    plt.plot(result.positions.index, result.positions[column].values, label=f"{name} - {column}")
             
             plt.title('Positions')
             plt.grid(True)
@@ -252,11 +258,10 @@ class Strategy_Manager:
             strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
         """
         stats = self.get_statistics(strategy_name)
-        
         if isinstance(stats, dict):
             print(f"\nStatistiques de la strategie '{strategy_name}':")
-            for key, value in stats.items():
-                print(f"{key}: {value:.4f}")
+            df_choisi = pd.DataFrame(stats,index=[strategy_name])
+            print(df_choisi.round(4))
         else:
             print("\nStatistiques des stratégies:")
             print(stats.round(4))

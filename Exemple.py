@@ -207,7 +207,7 @@ dico_strat = {
     'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
 }
 
-type_graph = 'plotly'#'plotly'#'seaborn'#'matplotlib'
+type_graph = 'matplotlib'#'plotly'#'seaborn'#'matplotlib'
 
 results_dict = {}
 
