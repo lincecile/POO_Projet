@@ -1,8 +1,7 @@
-from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, strategy, DataFileReader
+from mypackage import Strategy_Manager, Strategy
 import unittest
 import pandas as pd
 import numpy as np
-
 
 class TestStrategyManager(unittest.TestCase):
     def setUp(self):
@@ -65,7 +64,7 @@ class TestStrategyManager(unittest.TestCase):
         """Test les méthodes de plotting"""
         self.manager.add_strategy("test_strat", self.strategy1)
         self.manager.run_backtests()
-        
+
         # Test plot_strategy
         self.manager.plot_strategy("test_strat", backend='matplotlib')
         

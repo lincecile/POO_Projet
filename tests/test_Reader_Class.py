@@ -1,5 +1,5 @@
 
-from mypackage import Strategy_Manager, Strategy, Backtester, compare_results, strategy, DataFileReader
+from mypackage import DataFileReader
 import unittest
 import pandas as pd
 import numpy as np

@@ -1,11 +1,13 @@
-from mypackage import Backtester, Result, Strategy, strategy, compare_results
+# import matplotlib
+# matplotlib.use('Agg')  # backend non-interactif qui ne nécessite pas de serveur X ou d'interface graphique
+import matplotlib.pyplot as plt
+from mypackage import Result
 import unittest
 import pandas as pd
 import numpy as np
 
 def test_has_method3():
     assert hasattr(Result, "_calculate_returns")
-
 
 class TestResult(unittest.TestCase):
 
@@ -49,6 +51,9 @@ class TestResult(unittest.TestCase):
     # Vérification que les options de plotting fonctionnent 
     def test_plotting_backends(self):
 
+        # Ferme toutes les fenetres graphiques de potentiel test précédent
+        plt.close('all')
+
         # Test matplotlib 
         fig_mpl = self.result.plot("test_strat", backend='matplotlib')
         self.assertIsNotNone(fig_mpl, "La comparaison des résultats doit produire un graphique.")
@@ -60,8 +65,8 @@ class TestResult(unittest.TestCase):
         # Test plotly 
         fig_plotly = self.result.plot("test_strat", backend='plotly')
         self.assertIsNotNone(fig_plotly, "La comparaison des résultats doit produire un graphique.")
-    
- 
+
+
 if __name__ == '__main__':
     unittest.main()
 

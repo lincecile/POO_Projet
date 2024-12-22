@@ -15,16 +15,7 @@ class TestStrategy(unittest.TestCase):
         self.sample_data = pd.DataFrame({
             'price': np.random.randn(len(dates)).cumsum() + 10
         }, index=dates)
-        # self.invalid_data = pd.DataFrame({"not_price": [100, 101, 102]}) pas utile?
-        self.empty_data = pd.DataFrame(columns=["price"])
-        self.nan_data = pd.DataFrame(
-            {"price": [100, np.nan, 102, 103, 104]},
-            index=pd.date_range(start="2023-01-01", periods=5)
-        )
-
-    # Vérification que les NaN dans la data sont gérés ?
-
-    
+        
     # Vérification que le décorateur fonctionne
     def test_strategy_decorator(self):
         @strategy

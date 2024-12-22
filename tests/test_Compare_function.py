@@ -1,7 +1,10 @@
-from mypackage import Backtester, Result, Strategy, strategy, compare_results
+from mypackage import Result, compare_results
 import unittest
 import pandas as pd
 import numpy as np
+import matplotlib.figure
+import plotly.graph_objects as go
+import seaborn.axisgrid as sns_axisgrid
 
 class TestCompareResults(unittest.TestCase):
 
@@ -18,13 +21,14 @@ class TestCompareResults(unittest.TestCase):
         
         # Test different backends
         fig_mpl = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='matplotlib')
-        self.assertIsNotNone(fig_mpl)
-        
+        self.assertIsNotNone(fig_mpl, "La fonction 'compare_results' avec le backend 'matplotlib' ne doit pas retourner None.")
+        self.assertIsInstance(fig_mpl, matplotlib.figure.Figure, "Le backend 'matplotlib' doit retourner un objet de type 'matplotlib.figure.Figure'.")
+
         fig_sns = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='seaborn')
-        self.assertIsNotNone(fig_sns)
-        
+        self.assertIsInstance(fig_sns, sns_axisgrid.PairGrid, "Le backend 'matplotlib' doit retourner un objet de type 'matplotlib.figure.Figure'.")
+
         fig_plotly = compare_results([result1, result2], ['Strategy1', 'Strategy2'], backend='plotly')
-        self.assertIsNotNone(fig_plotly)
+        self.assertIsInstance(fig_plotly, go.Figure, "Le backend 'plotly' doit retourner un objet de type 'plotly.graph_objects.Figure'.")
 
 if __name__ == '__main__':
     unittest.main()

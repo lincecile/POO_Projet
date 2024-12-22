@@ -62,7 +62,7 @@ class Result:
         # Facteur de profitabilité
         total_gain = self.returns[self.returns > 0].sum()
         total_loss = self.returns[self.returns < 0].sum()
-        profit_factor = abs(total_gain / total_loss) if total_loss != 0 else total_gain / total_gain
+        profit_factor = abs(total_gain / total_loss) if total_loss != 0 else 1
 
         return {
             'total_return': total_return,
@@ -153,14 +153,13 @@ class Result:
                 title_text=f'Résultats du Backtest {name_strat}'
             )
 
-            fig.show()
             return fig
         
 def compare_results(results: list, strat_name: list, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
 
     # Statistiques de performance de chaque stratégie
-    stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name).fillna(0)
+    stats_comparison = pd.DataFrame([r.statistics for r in results], index=strat_name)
 
     if backend == 'matplotlib':
         fig, ax = plt.subplots(figsize=(12, 6))

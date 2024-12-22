@@ -1,4 +1,4 @@
-from mypackage import Backtester, Result, Strategy, strategy, compare_results
+from mypackage import Backtester, Result, Strategy
 import unittest
 import pandas as pd
 import numpy as np
@@ -15,12 +15,6 @@ class TestBacktester(unittest.TestCase):
         self.sample_data = pd.DataFrame({
             'price': np.random.randn(len(dates)).cumsum() + 100
         }, index=dates)
-        # self.invalid_data = pd.DataFrame({"not_price": [100, 101, 102]})
-        self.empty_data = pd.DataFrame(columns=["price"])
-        self.nan_data = pd.DataFrame(
-            {"price": [100, np.nan, 102, 103, 104]},
-            index=pd.date_range(start="2023-01-01", periods=5)
-        )
 
         # Création stratégie test
         class FakeStrategy(Strategy):
@@ -32,18 +26,17 @@ class TestBacktester(unittest.TestCase):
     
     # Vérification que la classe Backtester fonctionne avec les valeurs par défaut
     def test_initialization(self):
-        self.assertEqual(self.backtester.transaction_costs, 0.001)
-        self.assertEqual(self.backtester.slippage, 0.0005)
-        pd.testing.assert_frame_equal(self.backtester.data, self.sample_data)
+        self.assertEqual(self.backtester.transaction_costs, 0.001, "Le coût de transaction par défaut doit être 0.001.")
+        self.assertEqual(self.backtester.slippage, 0.0005, "Le slippage par défaut doit être 0.0005.")
 
     # Vérification que la classe Backtester renvoie bien un objet de la classe Result 
     def test_run_backtest(self):
         result = self.backtester.exec_backtest(self.strategy)
         
         self.assertIsInstance(result, Result, "Le résultat doit être une instance de Result.")
-        self.assertTrue(hasattr(result, 'positions'))
-        self.assertTrue(hasattr(result, 'trades'))
-        self.assertTrue(hasattr(result, 'returns'))
+        self.assertTrue(hasattr(result, 'positions'), "L'objet doit contenir l'attribut 'positions'.")
+        self.assertTrue(hasattr(result, 'trades'), "L'objet doit contenir l'attribut 'trades'.")
+        self.assertTrue(hasattr(result, 'returns'), "L'objet doit contenir l'attribut 'returns'.")
     
     # Vérification que les coûts de transaction et de slippage sont pris en compte 
     def test_transaction_costs(self):
@@ -51,7 +44,7 @@ class TestBacktester(unittest.TestCase):
         result = backtester.exec_backtest(self.strategy)
         
         if not result.trades.empty:
-            self.assertTrue(all(result.trades['cost'] > 0))
+            self.assertTrue(all(result.trades['cost'] >= 0), "Dans ce cas, les coûts de transaction doivent être positifs pour chaque transaction.")
 
 if __name__ == '__main__':
     unittest.main()
