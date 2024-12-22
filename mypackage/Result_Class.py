@@ -1,6 +1,9 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 class Result:
@@ -36,72 +39,100 @@ class Result:
         drawdowns = cumulative_returns / cumulative_returns.cummax() - 1
         max_drawdown = drawdowns.min()
 
+        # Ratio de Sortino
+        downside_returns = self.returns[self.returns < 0]
+        downside_deviation = (np.sqrt((downside_returns ** 2).mean()) * np.sqrt(252)
+                              if not downside_returns.empty else 0)
+        sortino_ratio = annual_return / downside_deviation if downside_deviation != 0 else np.nan
+
+        # VaR et CVaR à 95%
+        var_95 = np.percentile(self.returns, 5)
+        cvar_95 = self.returns[self.returns <= var_95].mean() if not self.returns[self.returns <= var_95].empty else 0
+
+        # Gain/Pertes moyen
+        avg_gain = self.returns[self.returns > 0].mean() if not self.returns[self.returns > 0].empty else 0
+        avg_loss = self.returns[self.returns < 0].mean() if not self.returns[self.returns < 0].empty else 0
+        profit_loss_ratio = abs(avg_gain / avg_loss) if avg_loss != 0 else np.nan
+
         # Pourcentage de trades gagnants
         win_rate = (self.returns[self.returns > 0].count() /
                     self.returns[self.returns != 0].count() if self.returns[self.returns != 0].count() > 0 else 0)
 
+        # Facteur de profitabilité
+        total_gain = self.returns[self.returns > 0].sum()
+        total_loss = self.returns[self.returns < 0].sum()
+        profit_factor = abs(total_gain / total_loss) if total_loss != 0 else 1
+
         return {
             'total_return': total_return,
             'annual_return': annual_return,
+            'profit_factor': profit_factor,
+            'volatility': volatility,
             'sharpe_ratio': sharpe_ratio,
             'max_drawdown': max_drawdown,
+            'sortino_ratio': sortino_ratio,
+            'VaR_95%': var_95,
+            'CVaR_95%': cvar_95,
+            'Profit/Loss_Ratio': profit_loss_ratio,
             'num_trades': len(self.trades),
             'win_rate': win_rate
         }
 
+    def plot(self, name_strat: str, backend: str = 'matplotlib', include_costs: bool = True):
+        """Visualise les résultats du backtest."""
+        cumulative_returns = (1 + self.returns).cumprod() if include_costs else (1 + self.data.pct_change()).cumprod()
 
-def compare_results_fixed_xaxis(results: dict):
-    """
-    Compare les résultats des stratégies avec un axe pour 'num_trades' et un autre pour le reste des métriques.
+        if backend == 'matplotlib':
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+            cumulative_returns.plot(ax=ax1, title=f'Rendements cumulatifs {name_strat}')
+            self.positions['position'].plot(ax=ax2, title='Positions')
+            plt.tight_layout()
+        elif backend == 'seaborn':
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+            sns.lineplot(data=cumulative_returns, ax=ax1).set_title(f'Rendements cumulatifs {name_strat}')
+            sns.lineplot(data=self.positions['position'], ax=ax2).set_title('Positions')
+            plt.tight_layout()
+        elif backend == 'plotly':
+            fig = make_subplots(rows=2, cols=1, vertical_spacing=0.1,
+                                subplot_titles=(f'Rendements cumulatifs {name_strat}', 'Positions'))
+            fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values,
+                                     name='Rendements cumulatifs'), row=1, col=1)
+            fig.add_trace(go.Scatter(x=self.positions.index, y=self.positions['position'], name='Positions'),
+                          row=2, col=1)
+            fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=700)
+            fig.show()
 
-    Args:
-        results (dict): Dictionnaire contenant les objets Result pour chaque stratégie.
-    """
-    # Extraire les statistiques pour chaque stratégie
+        return fig
+
+
+def compare_results(results: dict, liste_sep: list = None, backend: str = 'matplotlib'):
+    """Compare les résultats de plusieurs stratégies."""
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
 
-    # Séparer les métriques
-    num_trades = stats_comparison['num_trades']
-    other_metrics = stats_comparison.drop(columns=['num_trades'])
+    if liste_sep:
+        stats_sep = stats_comparison[liste_sep]
+        stats_main = stats_comparison.drop(columns=liste_sep)
+    else:
+        stats_main = stats_comparison
+        stats_sep = None
 
-    # Création du graphique
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    if backend == 'matplotlib':
+        fig, ax1 = plt.subplots(figsize=(12, 6))
+        stats_main.plot(kind='bar', ax=ax1)
+        if stats_sep is not None:
+            ax2 = ax1.twinx()
+            stats_sep.plot(kind='bar', ax=ax2, color=['orange', 'green'])
+        ax1.set_title('Comparaison des stratégies')
+        plt.tight_layout()
+    elif backend == 'seaborn':
+        stats_long = stats_comparison.reset_index().melt(id_vars='index', var_name='Metric', value_name='Value')
+        sns.barplot(data=stats_long, x='index', y='Value', hue='Metric').set_title('Comparaison des stratégies')
+        plt.tight_layout()
+    elif backend == 'plotly':
+        fig = go.Figure()
+        for col in stats_comparison.columns:
+            fig.add_trace(go.Bar(name=col, x=list(stats_comparison.index), y=stats_comparison[col]))
+        fig.update_layout(title='Comparaison des stratégies', barmode='group', height=600)
+        fig.show()
 
-    # Graphe pour 'num_trades' (axe gauche)
-    num_trades.plot(kind='bar', ax=ax1, color='skyblue', position=0, width=0.4, label='num_trades')
-
-    ax1.set_ylabel("Nombre de trades", fontsize=12)
-    ax1.set_xlabel("Stratégies", fontsize=12)
-    ax1.set_title("Comparaison des stratégies", fontsize=14)
-    ax1.tick_params(axis='x', rotation=45)
-    ax1.legend(loc="upper left")
-
-    # Graphe pour les autres métriques (axe droit)
-    ax2 = ax1.twinx()
-    other_metrics_normalized = other_metrics / other_metrics.abs().max()  # Normalisation des autres métriques
-    other_metrics_normalized.plot(kind='bar', ax=ax2, width=0.4, position=1, alpha=0.7)
-
-    ax2.set_ylabel("Métriques normalisées (autres)", fontsize=12)
-    ax2.legend(loc="upper right")
-
-    # Mise en page
-    plt.tight_layout()
-    plt.show()
-
-
-# Exemple d'appel avec des données fictives
-data1 = pd.DataFrame({'price': np.random.rand(100)})
-positions1 = pd.DataFrame({'position': np.random.choice([-1, 0, 1], size=100)})
-trades1 = pd.DataFrame({'cost': np.random.rand(10)})
-
-data2 = pd.DataFrame({'price': np.random.rand(100)})
-positions2 = pd.DataFrame({'position': np.random.choice([-1, 0, 1], size=100)})
-trades2 = pd.DataFrame({'cost': np.random.rand(10)})
-
-results = {
-    'MA Strat Default': Result(data1, positions1, trades1),
-    'Momentum': Result(data2, positions2, trades2)
-}
-
-# Comparer les stratégies avec un axe fixe pour les abscisses
-compare_results_fixed_xaxis(results)
+    return fig
