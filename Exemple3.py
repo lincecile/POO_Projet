@@ -166,3 +166,4 @@ def plot_cumulative_returns(manager):
 # Appel des deux fonctions graphiques
 plot_num_trades_transparency(manager)
 plot_cumulative_returns(manager)
+
