@@ -123,29 +123,53 @@ class Result:
         return fig
 
 
-def compare_results(results: dict, liste_sep: list = None, backend: str = 'matplotlib'):
+def compare_results(results: dict, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
+    
+    # liste des métrics avec valeurs très supérieur à 1 
+    liste_sep = stats_comparison.loc[:, (stats_comparison > 20).any()].columns
 
-    if liste_sep:
-        stats_sep = stats_comparison[liste_sep]
-        stats_main = stats_comparison.drop(columns=liste_sep)
-    else:
-        stats_main = stats_comparison
-        stats_sep = None
+    # Statistiques pour chaque dictionnaire
+    stats_sep = stats_comparison[liste_sep]               # séparation des métrics avec valeurs très supérieur à 1  
+    stats_main = stats_comparison.drop(columns=liste_sep)
 
     if backend == 'matplotlib':
         fig, ax1 = plt.subplots(figsize=(12, 6))
-        stats_main.plot(kind='bar', ax=ax1)
-        if stats_sep is not None:
-            ax2 = ax1.twinx()
-            stats_sep.plot(kind='bar', ax=ax2, color=['orange', 'green'])
-        ax1.set_title('Comparaison des stratégies')
+        stats_sep.plot(kind='bar', ax=ax1, color='lightblue', alpha=0.5, label=liste_sep)
+
+        #ax1.set_ylabel('Nombre de Trades')
+        ax1.set_xlabel('Stratégies')
+        ax1.set_title('Comparaison des Stratégies avec Num Trades Transparent')
+        ax1.tick_params(axis='x', rotation=45)
+        ax1.legend(loc='upper left')
+
+        ax2 = ax1.twinx()
+        #other_metrics_normalized = other_metrics / other_metrics.abs().max()
+        stats_main.plot(kind='bar', ax=ax2)#, alpha=0.7, width=0.8)
+
+        ax2.set_ylabel('Métriques')
+        ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
         plt.tight_layout()
+
     elif backend == 'seaborn':
-        stats_long = stats_comparison.reset_index().melt(id_vars='index', var_name='Metric', value_name='Value')
-        sns.barplot(data=stats_long, x='index', y='Value', hue='Metric').set_title('Comparaison des stratégies')
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        stats_long = stats_comparison.reset_index().melt(
+            id_vars='index', 
+            var_name='Metric', 
+            value_name='Value'
+        )
+        sns.barplot(
+            data=stats_long,
+            x='index',
+            y='Value',
+            hue='Metric',
+            ax=ax
+        )
+        ax.set_title('Comparaison des stratégies')
         plt.tight_layout()
+
     elif backend == 'plotly':
         fig = go.Figure()
         for col in stats_comparison.columns:
@@ -153,4 +177,4 @@ def compare_results(results: dict, liste_sep: list = None, backend: str = 'matpl
         fig.update_layout(title='Comparaison des stratégies', barmode='group', height=600)
         fig.show()
 
-    return fig
+        return fig

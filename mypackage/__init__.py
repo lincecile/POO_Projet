@@ -3,9 +3,7 @@ from mypackage.Backtester_Class import Backtester
 from mypackage.Result_Class import Result, compare_results
 from mypackage.Strategy_Manager_Class import Strategy_Manager
 from mypackage.Reader_Class import DataFileReader
-from .Result_Class import Result, compare_results
-from .Strategy_Class import Strategy
-from .Backtester_Class import Backtester
+
 
 
 

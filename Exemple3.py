@@ -9,24 +9,10 @@ filepath = 'fichier_donnée.csv'
 # Initialiser le lecteur de fichiers
 reader = DataFileReader(date_format='%d/%m/%Y')
 data = reader.read_file(filepath, date_column='Date_Price')
-data = data[data.columns.to_list()[:2]]
+data = data[data.columns.to_list()[:10]]
 all_asset = data.columns.to_list()
 
 # Création d'une stratégie par héritage
-class MovingAverageCrossover(Strategy):
-    def __init__(self, short_window=20, long_window=50, rebalancing_frequency='D'):
-        super().__init__(rebalancing_frequency=rebalancing_frequency)
-        self.short_window = short_window
-        self.long_window = long_window
-
-    def get_position(self, historical_data, current_position):
-        if len(historical_data) < self.long_window:
-            return np.nan
-
-        short_ma = historical_data.iloc[:, 0].rolling(self.short_window).mean()
-        long_ma = historical_data.iloc[:, 0].rolling(self.long_window).mean()
-
-        return 1 if short_ma.iloc[-1] > long_ma.iloc[-1] else -1
 
 class MovingAverageCrossover(Strategy):
     """Stratégie de croisement de moyennes mobiles pour plusieurs actifs."""
@@ -151,7 +137,7 @@ mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10,
 dico_strat = {
     'ma_strat_default': (ma_strat_default, None, None),
     'ma_strat_weekly': (ma_strat_weekly, None, None),
-    # 'ma_strat_monthly': (ma_strat_monthly, None, None),
+    'ma_strat_monthly': (ma_strat_monthly, None, None),
     # 'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
     # 'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
     # 'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
@@ -168,31 +154,22 @@ manager.run_backtests()
 manager.print_statistics()
 manager.print_statistics(strategy_name="ma_strat_default")
 
-# Premier graphique : Num Trades Transparent
-def plot_num_trades_transparency(manager):
-    results = manager.results
-    stats = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
+# Visualize results
+backend = 'seaborn' # 'plotly' # 'matplotlib' # 'seaborn'
 
-    num_trades = stats['num_trades']
-    other_metrics = stats.drop(columns=['num_trades'])
+# Plot individual strategies
+manager.plot_all_strategies(backend=backend)
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
-    num_trades.plot(kind='bar', ax=ax1, color='lightblue', alpha=0.5, label='Num Trades')
+# Plot individual strategies
+#manager.plot_strategy(strategy_name="ma_strat_default",backend=backend)
 
-    ax1.set_ylabel('Nombre de Trades')
-    ax1.set_xlabel('Stratégies')
-    ax1.set_title('Comparaison des Stratégies avec Num Trades Transparent')
-    ax1.tick_params(axis='x', rotation=45)
-    ax1.legend(loc='upper left')
+# Compare all strategies
+manager.compare_strategies(backend=backend)
 
-    ax2 = ax1.twinx()
-    other_metrics_normalized = other_metrics / other_metrics.abs().max()
-    other_metrics_normalized.plot(kind='bar', ax=ax2, alpha=0.7, width=0.8)
+plt.show()
 
-    ax2.set_ylabel('Métriques Normalisées')
-    ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
-    plt.tight_layout()
-    plt.show()
+
+exit()
 
 # Deuxième graphique : Répartition des rendements cumulés
 def plot_cumulative_returns(manager):
@@ -211,6 +188,5 @@ def plot_cumulative_returns(manager):
     plt.show()
 
 # Appel des deux fonctions graphiques
-plot_num_trades_transparency(manager)
 plot_cumulative_returns(manager)
 

@@ -3,9 +3,9 @@ from typing import Dict, Tuple, Union
 import matplotlib.pyplot as plt
 from .Strategy_Class import Strategy
 from .Backtester_Class import Backtester
-from .Result_Class import Result
+from .Result_Class import Result, compare_results
 import plotly.graph_objects as go
-
+import seaborn as sns
 
 class Strategy_Manager:
     """
@@ -124,13 +124,6 @@ class Strategy_Manager:
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
         
-        # Extraction des noms de stratégies
-        strategy_names = list(self.results.keys())
-        stats_comparison = pd.DataFrame([r.statistics for r in self.results.values()], index=strategy_names)
-        
-        num_trades = stats_comparison['num_trades']
-        other_metrics = stats_comparison.drop(columns=['num_trades'])
-
         if backend == 'matplotlib':
             # Graphique des rendements
             plt.figure(figsize=(12, 6))
@@ -168,40 +161,93 @@ class Strategy_Manager:
                 if include_costs:
                     cumulative_returns = (1 + result.returns).cumprod()
                 else:
-                    price_returns = self.data[self.data.columns[0]].pct_change()
-                    cumulative_returns = (1 + price_returns * result.positions['position'].shift(1)).cumprod()
-                
-                sns.lineplot(data=cumulative_returns, label=name)
-            
+                    price_returns = self.data.pct_change()
+                    cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
+                    for column in result.positions.columns:  # Parcourir chaque actif
+                        # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
+                        cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
+
+                for column in cumulative_returns.columns:
+                    sns.lineplot(data=cumulative_returns[column], label=f"{name} - {column}")
+
             plt.title('Rendements cumulatifs')
             
             # Graphique des positions
             plt.figure(figsize=(12, 6))
             for name, result in self.results.items():
-                sns.lineplot(data=result.positions['position'], label=name)
+                for column in result.positions.columns:  # Parcourir chaque colonne (actif)
+                    plt.plot(result.positions.index, result.positions[column].values, label=f"{name} - {column}")
             
             plt.title('Positions')
             
         elif backend == 'plotly':
-            fig = go.Figure()
+            # Graphique des rendements
+            fig_returns = go.Figure()
+            
+            for name, result in self.results.items():
+                if include_costs:
+                    cumulative_returns = (1 + result.returns).cumprod()
+                else:
+                    price_returns = self.data.pct_change()
+                    cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
+                    for column in result.positions.columns:  # Parcourir chaque actif
+                        # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
+                        cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
 
-            # Ajout des barres pour 'num_trades'
-            fig.add_trace(go.Bar(x=strategy_names, y=num_trades, name='Num Trades', marker_color='skyblue'))
+                for column in cumulative_returns.columns:
+                    fig_returns.add_trace(
+                        go.Scatter(
+                            x=cumulative_returns.index,
+                            y=cumulative_returns[column].values,
+                            name=name,
+                            mode='lines'
+                        )
+                    )
+            
+                    fig_returns.update_layout(
+                        title='Rendements cumulatifs',
+                        showlegend=True,
+                        height=600
+                    )
+            
+            # Graphique des positions
+            fig_positions = go.Figure()
+            
+            for name, result in self.results.items():
+                for column in result.positions.columns:
+                    fig_positions.add_trace(
+                        go.Scatter(
+                            x=result.positions.index,
+                            y=result.positions[column].values,
+                            name=f"{name} - {column}",
+                            mode='lines'
+                        )
+                    )
+            
+                fig_positions.update_layout(
+                    title='Positions',
+                    showlegend=True,
+                    height=600
+                )
+            
+            fig_returns.show()
+            fig_positions.show()
 
-            # Ajout des barres pour les autres métriques
-            for column in other_metrics.columns:
-                fig.add_trace(go.Bar(x=strategy_names, y=other_metrics[column] / other_metrics.abs().max(), name=column))
-
-            fig.update_layout(
-                title='Comparaison des Stratégies avec toutes les Stratégies affichées',
-                xaxis_title='Stratégies',
-                yaxis_title='Valeurs Normalisées',
-                barmode='group',
-                legend=dict(title='Métriques'),
-                height=600
-            )
+    def compare_strategies(self, backend: str = 'matplotlib') -> None:
+        """
+        Comparer toutes les stratégies en utilisant la fonction compare_results.
+        
+        Args:
+            backend: Backend de visualisation ('matplotlib', 'seaborn', ou 'plotly').
+        """
+        if not self.results:
+            raise ValueError("Pas de backtest sur les stratégies.")
+                
+        fig = compare_results(self.results,backend=backend)
+        
+        if backend == 'plotly':
             fig.show()
-    
+
     def print_statistics(self, strategy_name: Union[str, None] = None) -> None:
         """
         Afficher les statistiques pour toutes les stratégies.
