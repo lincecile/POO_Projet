@@ -1,6 +1,7 @@
 import pandas as pd
 from .Result_Class import Result
 from .Strategy_Class import Strategy
+from typing import Union
 
 class Backtester:
     """Classe pour exécuter les backtests."""
@@ -18,6 +19,40 @@ class Backtester:
         self.transaction_costs = transaction_costs or {col: 0.001 for col in data.columns}
         self.slippage = slippage or {col: 0.0005 for col in data.columns}
     
+    def __init__(self, data: pd.DataFrame, transaction_costs: Union[float, dict] = None, slippage: Union[float, dict] = None):
+        """
+        Initialise le backtester avec des coûts sous format float ou dict.
+        
+        Args:
+            data: DataFrame avec les données de tous les actifs
+            transaction_costs: Float (coût générale pour tous les actifs) ou dict (coûts spécifique à chaque actif)
+            slippage: Float (coût générale pour tous les actifs) ou dict (coûts spécifique à chaque actif)
+        """
+        self.data = data
+        self.transaction_costs = self._process_costs(transaction_costs, default=0.001)
+        self.slippage = self._process_costs(slippage, default=0.0005)
+    
+    def _process_costs(self, costs: Union[float, dict, None], default: float) -> dict:
+        """Convert costs input to dictionary format."""
+
+        # Si l'utilisateur a entré un dictionnaire complet de coût
+        if isinstance(costs, dict) and len(costs) == len(self.data.columns):
+            return costs
+        
+        # Si l'utilisateur entre un coût général
+        elif isinstance(costs, float):
+            return {col: costs for col in self.data.columns}
+        
+        # Si l'utilisateur entre uniquement un dictionnaire des actifs concernés par les coûts
+        elif isinstance(costs, dict):
+            processed_costs = {col: default for col in self.data.columns}
+            processed_costs.update(costs)        
+            return processed_costs
+        
+        # Si aucun coût n'est indiqué, des coûts par défaut sont appliqués
+        return {col: default for col in self.data.columns}
+    
+
     def exec_backtest(self, strategy: Strategy) -> Result:
         """
         Exécute le backtest pour une stratégie donnée.

@@ -12,49 +12,52 @@ class Strategy_Manager:
     Classe pour gérer et comparer plusieurs stratégies de trading.
     Permet de gérer les backtests, les visualisations et les comparaisons de plusieurs stratégies.
     """
-    
-    def __init__(self, data: pd.DataFrame, strategies_dict: Dict[str, Tuple[Strategy, float, float]] = None):
+    def __init__(self, data: pd.DataFrame, strategies_dict: Dict[str, Union[Tuple[Strategy, float, float], Tuple[Strategy, dict, dict]]] = None):
         """
         Initialise le Strategy_Manager.
         
         Args:
             data: DataFrame contenant les données de marché.
             strategies_dict: Dictionnaire des stratégies au format :
-                             {nom: (instance_stratégie, coûts_de_transaction, slippage)}
+                            {nom: (instance_stratégie, coûts_de_transaction, slippage)}
+                            ou {nom: (instance_stratégie, dict_costs, dict_slippage)}
         """
         self.data = data
-        self.strategies: Dict[str, Tuple[Strategy, float, float]] = {}
+        self.strategies: Dict[str, Union[Tuple[Strategy, float, float], Tuple[Strategy, dict, dict]]] = {}
         self.results: Dict[str, Result] = {}
         
         if strategies_dict:
             self.add_strategies_from_dict(strategies_dict)
     
-    def add_strategies_from_dict(self, strategies_dict: Dict[str, Tuple[Strategy, float, float]]) -> None:
+    def add_strategies_from_dict(self, strategies_dict: Dict[str, Union[Tuple[Strategy, float, float], Tuple[Strategy, dict, dict]]]) -> None:
         """
         Ajoute des stratégies depuis un dictionnaire créé par l'utilisateur.
         
         Args:
             strategies_dict: Dictionnaire au format :
-                             {nom: (instance_stratégie, coûts_de_transaction, slippage)}
+                            {nom: (instance_stratégie, coûts_de_transaction, slippage)}
+                            ou {nom: (instance_stratégie, dict_costs, dict_slippage)}
         """
-        for name, (strategy, costs, slip) in strategies_dict.items():
-            self.add_strategy(name, strategy, costs, slip)
-        
-    def add_strategy(self, name: str, strategy: Strategy, transaction_costs: float = 0.001, slippage: float = 0.0005) -> None:
+        for name, strategy_tuple in strategies_dict.items():
+            self.add_strategy(name, *strategy_tuple)
+    
+    def add_strategy(self, name: str, strategy: Strategy, 
+                transaction_costs: Union[float, dict] = 0.001, 
+                slippage: Union[float, dict] = 0.0005) -> None:
         """
         Ajout d'une stratégie au gestionnaire.
         
         Args:
             name: Identifiant unique pour la stratégie.
             strategy: Instance de la stratégie.
-            transaction_costs: Coûts de transaction pour la stratégie.
-            slippage: Coûts liés au slippage pour la stratégie.
+            transaction_costs: Coûts de transaction (float ou dict).
+            slippage: Coûts liés au slippage (float ou dict).
         """
         if name in self.strategies:
             raise ValueError(f"Une stratégie existe déjà au nom de '{name}'")
         
         self.strategies[name] = (strategy, transaction_costs, slippage)
-        
+
     def remove_strategy(self, name: str) -> None:
         """
         Supprimer une stratégie du gestionnaire.
@@ -141,7 +144,7 @@ class Strategy_Manager:
             include_costs=include_costs
         )
     
-    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
+    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = False) -> None:
         """
         Comparer toutes les stratégies en utilisant la fonction compare_results.
         
@@ -156,7 +159,8 @@ class Strategy_Manager:
             # Graphique des rendements
             plt.figure(figsize=(12, 6))
             for name, result in self.results.items():
-                
+                print('=================', name)
+                print(result.returns)
                 # Les returns prennent déjà en compte les coûts
                 if include_costs:
                     cumulative_returns = (1 + result.returns).cumprod()
@@ -165,16 +169,15 @@ class Strategy_Manager:
                 else:
                     price_returns = self.data.pct_change()
                     cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
-                    print(result.positions.columns)
+
                     for column in result.positions.columns:  # Parcourir chaque actif
                         # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
                         cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
-                    cumulative_returns['portfolio'] = cumulative_returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
                     
-                # print(cumulative_returns)
-                print(cumulative_returns.columns)
-                for column in cumulative_returns.columns:
-                    plt.plot(cumulative_returns.index, cumulative_returns[column], label=f"{name} - {column}")
+                    print(cumulative_returns)
+                    cumulative_returns['portfolio'] = cumulative_returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
+
+                plt.plot(cumulative_returns.index, cumulative_returns['portfolio'], label=f"{name} - portfolio")
 
             plt.title('Rendements cumulatifs')
             plt.grid(True)

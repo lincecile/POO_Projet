@@ -13,7 +13,7 @@ class Result:
         self.data = data
         self.positions = positions
         self.trades = trades
-        self.returns = self._calculate_returns()
+        self.returns, self.returns_no_cost = self._calculate_returns()
         
         statistics = self._calculate_statistics()
         self.statistics = {key: series['portfolio'] for key, series in statistics.items()}
@@ -22,7 +22,8 @@ class Result:
     def _calculate_returns(self) -> pd.DataFrame:
         """Calcul des rendements de la stratégie pour chaque actif"""
         returns = pd.DataFrame(index=self.positions.index)
-        
+        returns_without_cost = pd.DataFrame(index=self.positions.index)
+
         for asset in self.positions.columns:
             price_returns = self.data[asset].pct_change()
             strategy_returns = price_returns * self.positions[asset].shift(1)
@@ -30,15 +31,18 @@ class Result:
             # Prise en compte des coûts si des trades existent pour cet actif
             if not self.trades.empty:
                 asset_trades = self.trades[self.trades['asset'] == asset]
+                returns_without_cost[asset] = strategy_returns.fillna(0)
                 if not asset_trades.empty:
                     strategy_returns.loc[asset_trades.index] -= asset_trades['cost']
-                    
             returns[asset] = strategy_returns.fillna(0)
         
         # Ajout d'une colonne pour le rendement total du portefeuille
         returns['portfolio'] = returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
-        
-        return returns
+        returns_without_cost['portfolio'] = returns_without_cost.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
+        print("====================")
+        print(returns)
+        print(returns_without_cost)
+        return returns, returns_without_cost
     
     def _calculate_statistics(self) -> dict:
         """Calcul des statistiques de performance de la stratégie"""

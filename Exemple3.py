@@ -134,16 +134,22 @@ vol_strat_monthly = VolatilityBasedStrategy(volatility_threshold=0.02, window_si
 
 mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10, rebalancing_frequency='M')
 
+transaction_cost = {'AAVEUSDT': 0.5, 'ACMUSDT': 0.2, 'ADAUSDT': 0.4, 'ADXUSDT': 0.6, 'AGLDUSDT': 0.7, 'ALGOUSDT': 0.001, 'ALICEUSDT': 0.8, 'ALPACAUSDT': 2, 'ALPHAUSDT': 0.8, 'AMPUSDT': 0.051}
+slippage_cost = {'AAVEUSDT': 0.53, 'ACMUSDT': 0.03, 'ADAUSDT': 0.33, 'ADXUSDT': 0.63, 'AGLDUSDT': 0.73, 'ALGOUSDT': 0.001, 'ALICEUSDT': 0.8, 'ALPACAUSDT': 21, 'ALPHAUSDT': 0.8, 'AMPUSDT': 0.01}
+
+transaction_cost_partiel = {'AAVEUSDT': 5, 'ACMUSDT': 2}
+
 dico_strat = {
-    'ma_strat_default': (ma_strat_default, None, None),
-    'ma_strat_weekly': (ma_strat_weekly, None, None),
-    #'ma_strat_monthly': (ma_strat_monthly, None, None),
+    'ma_strat_default': (ma_strat_default, 0.1, 0.2),
+    'ma_strat_weekly': (ma_strat_weekly, transaction_cost_partiel, None),
+    'ma_strat_monthly': (ma_strat_monthly, transaction_cost, slippage_cost),
     # 'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
     # 'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
     # 'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
     # 'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
     # 'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
 }
+
 
 manager = Strategy_Manager(data, dico_strat)
 
@@ -155,7 +161,7 @@ manager.run_backtests()
 # manager.print_statistics(strategy_name="ma_strat_default")
 # manager.print_statistics(strategy_name="ma_strat_default",detail=True)
 # manager.print_statistics(detail=True)
-
+exit()
 # Visualize results
 backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
 
