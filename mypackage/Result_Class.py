@@ -18,7 +18,7 @@ class Result:
         statistics = self._calculate_statistics()
         self.statistics = {key: series['portfolio'] for key, series in statistics.items()}
         self.statistics_each_asset = {key: series.drop('portfolio') for key, series in statistics.items()}
-        
+
     def _calculate_returns(self) -> pd.DataFrame:
         """Calcul des rendements de la stratégie pour chaque actif"""
         returns = pd.DataFrame(index=self.positions.index)

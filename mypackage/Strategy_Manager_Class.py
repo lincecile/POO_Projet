@@ -87,7 +87,7 @@ class Strategy_Manager:
         """
         if not self.results:
             raise ValueError("Il faut lancer le backtest d'abord.")
-            
+        
         # Pour une stratégie particuliere
         if strategy_name is not None:
             if strategy_name not in self.results:
@@ -95,6 +95,33 @@ class Strategy_Manager:
             return self.results[strategy_name].statistics
         
         return pd.DataFrame([result.statistics for result in self.results.values()], index=self.results.keys())
+    
+    def get_statistics_detail(self, strategy_name: Union[str, None] = None) -> Union[Dict, pd.DataFrame]:
+        """
+        Obtenir les statistiques pour une stratégie ou pour toutes les stratégies.
+        
+        Args:
+            strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
+            
+        Returns:
+            DataFrame des statistiques pour toutes les stratégies.
+        """
+        if not self.results:
+            raise ValueError("Il faut lancer le backtest d'abord.")
+        
+        df = pd.DataFrame([result.statistics_each_asset for result in self.results.values()], index=self.results.keys())
+        data = df.applymap(lambda x: x.to_dict())  
+        data = data.stack() 
+        data = data.apply(pd.Series).stack()  
+        data = data.unstack(level=1)
+
+        # Pour une stratégie particuliere, avoir le détail du portefeuille
+        if strategy_name is not None:
+            if strategy_name not in self.results:
+                raise ValueError(f"Pas de stratégie à ce nom : '{strategy_name}'")
+            return data.loc[strategy_name]
+
+        return data
     
     def plot_strategy(self, strategy_name: str, backend: str = 'matplotlib', include_costs: bool = True) -> None:
         """
@@ -114,7 +141,7 @@ class Strategy_Manager:
             include_costs=include_costs
         )
     
-    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = False) -> None:
+    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
         """
         Comparer toutes les stratégies en utilisant la fonction compare_results.
         
@@ -124,19 +151,28 @@ class Strategy_Manager:
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
         
+        
         if backend == 'matplotlib':
             # Graphique des rendements
             plt.figure(figsize=(12, 6))
             for name, result in self.results.items():
+                
+                # Les returns prennent déjà en compte les coûts
                 if include_costs:
                     cumulative_returns = (1 + result.returns).cumprod()
+
+                # Si on ne souhaite pas intégré les coûts, on recalcule les returns sans les coûts
                 else:
                     price_returns = self.data.pct_change()
                     cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
+                    print(result.positions.columns)
                     for column in result.positions.columns:  # Parcourir chaque actif
                         # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
                         cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
-                
+                    cumulative_returns['portfolio'] = cumulative_returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
+                    
+                # print(cumulative_returns)
+                print(cumulative_returns.columns)
                 for column in cumulative_returns.columns:
                     plt.plot(cumulative_returns.index, cumulative_returns[column], label=f"{name} - {column}")
 
@@ -248,18 +284,22 @@ class Strategy_Manager:
         if backend == 'plotly':
             fig.show()
 
-    def print_statistics(self, strategy_name: Union[str, None] = None) -> None:
+    def print_statistics(self, strategy_name: Union[str, None] = None, detail=False) -> None:
         """
         Afficher les statistiques pour toutes les stratégies.
         
         Args:
             strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
         """
-        stats = self.get_statistics(strategy_name)
+
+        stats = self.get_statistics_detail(strategy_name) if detail else self.get_statistics(strategy_name)
+
+        strat_name = strategy_name if strategy_name is not None else ''
+
         if isinstance(stats, dict):
-            print(f"\nStatistiques de la strategie '{strategy_name}':")
-            df_choisi = pd.DataFrame(stats,index=[strategy_name])
+            print(f"\nStatistiques de la strategie '{strat_name}':")
+            df_choisi = pd.DataFrame(stats,index=[strat_name])
             print(df_choisi.round(4))
         else:
-            print("\nStatistiques des stratégies:")
+            print(f"\nStatistiques : {strat_name}")
             print(stats.round(4))

@@ -137,7 +137,7 @@ mco_strat_monthly = MCOBasedStrategy(threshold=0.02, initial_position_cost=0.10,
 dico_strat = {
     'ma_strat_default': (ma_strat_default, None, None),
     'ma_strat_weekly': (ma_strat_weekly, None, None),
-    'ma_strat_monthly': (ma_strat_monthly, None, None),
+    #'ma_strat_monthly': (ma_strat_monthly, None, None),
     # 'mom_strat_daily': (mom_strat_daily, 0.002, 0.0005),
     # 'mom_strat_weekly': (mom_strat_weekly, 0.01, 0.004),
     # 'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
@@ -151,15 +151,18 @@ manager = Strategy_Manager(data, dico_strat)
 manager.run_backtests()
 
 # Affichage des statistiques
-manager.print_statistics()
-manager.print_statistics(strategy_name="ma_strat_default")
+# manager.print_statistics()
+# manager.print_statistics(strategy_name="ma_strat_default")
+# manager.print_statistics(strategy_name="ma_strat_default",detail=True)
+# manager.print_statistics(detail=True)
 
 # Visualize results
-backend = 'seaborn' # 'plotly' # 'matplotlib' # 'seaborn'
+backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
 
 # Plot individual strategies
 manager.plot_all_strategies(backend=backend)
-
+plt.show()
+exit()
 # Plot individual strategies
 #manager.plot_strategy(strategy_name="ma_strat_default",backend=backend)
 
