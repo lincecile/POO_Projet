@@ -167,10 +167,9 @@ backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
 
 # Plot individual strategies
 manager.plot_all_strategies(backend=backend)
-plt.show()
-exit()
+
 # Plot individual strategies
-#manager.plot_strategy(strategy_name="ma_strat_default",backend=backend)
+manager.plot_strategy(strategy_name="ma_strat_default",backend=backend)
 
 # Compare all strategies
 manager.compare_strategies(backend=backend)

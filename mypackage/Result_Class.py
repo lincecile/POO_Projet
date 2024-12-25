@@ -102,28 +102,26 @@ class Result:
     def plot(self, name_strat: str, backend: str = 'matplotlib', include_costs: bool = True):
         """Visualise les résultats du backtest."""
         cumulative_returns = (1 + self.returns).cumprod() if include_costs else (1 + self.data.pct_change()).cumprod()
-
+    
         if backend == 'matplotlib':
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
-            cumulative_returns.plot(ax=ax1, title=f'Rendements cumulatifs {name_strat}')
-            self.positions['position'].plot(ax=ax2, title='Positions')
+            fig = plt.figure(figsize=(12, 6))
+            cumulative_returns.plot(title=f'Rendements cumulatifs {name_strat}')
             plt.tight_layout()
+            return fig
+        
         elif backend == 'seaborn':
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
-            sns.lineplot(data=cumulative_returns, ax=ax1).set_title(f'Rendements cumulatifs {name_strat}')
-            sns.lineplot(data=self.positions['position'], ax=ax2).set_title('Positions')
+            fig = plt.figure(figsize=(12, 6))
+            sns.lineplot(data=cumulative_returns).set_title(f'Rendements cumulatifs {name_strat}')
             plt.tight_layout()
+            return fig
+        
         elif backend == 'plotly':
-            fig = make_subplots(rows=2, cols=1, vertical_spacing=0.1,
-                                subplot_titles=(f'Rendements cumulatifs {name_strat}', 'Positions'))
+            fig = go.Figure()
             fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values,
-                                     name='Rendements cumulatifs'), row=1, col=1)
-            fig.add_trace(go.Scatter(x=self.positions.index, y=self.positions['position'], name='Positions'),
-                          row=2, col=1)
-            fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=700)
+                                name='Rendements cumulatifs'))
+            fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=600)
             fig.show()
-
-        return fig
+            return fig
 
 
 def compare_results(results: dict, backend: str = 'matplotlib'):
