@@ -27,11 +27,12 @@ class Result:
         for asset in self.positions.columns:
             price_returns = self.data[asset].pct_change()
             strategy_returns = price_returns * self.positions[asset].shift(1)
-            
+            returns_without_cost[asset] = strategy_returns.fillna(0)
+
             # Prise en compte des coûts si des trades existent pour cet actif
             if not self.trades.empty:
                 asset_trades = self.trades[self.trades['asset'] == asset]
-                returns_without_cost[asset] = strategy_returns.fillna(0)
+                
                 if not asset_trades.empty:
                     strategy_returns.loc[asset_trades.index] -= asset_trades['cost']
             returns[asset] = strategy_returns.fillna(0)
@@ -39,9 +40,7 @@ class Result:
         # Ajout d'une colonne pour le rendement total du portefeuille
         returns['portfolio'] = returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
         returns_without_cost['portfolio'] = returns_without_cost.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
-        print("====================")
-        print(returns)
-        print(returns_without_cost)
+
         return returns, returns_without_cost
     
     def _calculate_statistics(self) -> dict:

@@ -161,7 +161,7 @@ manager.run_backtests()
 # manager.print_statistics(strategy_name="ma_strat_default")
 # manager.print_statistics(strategy_name="ma_strat_default",detail=True)
 # manager.print_statistics(detail=True)
-exit()
+
 # Visualize results
 backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
 

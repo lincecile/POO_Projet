@@ -158,25 +158,11 @@ class Strategy_Manager:
         if backend == 'matplotlib':
             # Graphique des rendements
             plt.figure(figsize=(12, 6))
+
             for name, result in self.results.items():
-                print('=================', name)
-                print(result.returns)
-                # Les returns prennent déjà en compte les coûts
-                if include_costs:
-                    cumulative_returns = (1 + result.returns).cumprod()
-
-                # Si on ne souhaite pas intégré les coûts, on recalcule les returns sans les coûts
-                else:
-                    price_returns = self.data.pct_change()
-                    cumulative_returns = pd.DataFrame(index=price_returns.index)  # Même index que 'price_returns'
-
-                    for column in result.positions.columns:  # Parcourir chaque actif
-                        # Calcule les rendements cumulés pour l'actif en utilisant 'price_returns' et les positions
-                        cumulative_returns[column] = (1 + price_returns[column] * result.positions[column].shift(1)).cumprod()
-                    
-                    print(cumulative_returns)
-                    cumulative_returns['portfolio'] = cumulative_returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
-
+                # Utilisation des returns déjà calculés
+                returns_to_use = result.returns if include_costs else result.returns_no_cost
+                cumulative_returns = (1 + returns_to_use).cumprod()
                 plt.plot(cumulative_returns.index, cumulative_returns['portfolio'], label=f"{name} - portfolio")
 
             plt.title('Rendements cumulatifs')
