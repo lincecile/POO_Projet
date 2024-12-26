@@ -144,7 +144,7 @@ class Strategy_Manager:
             include_costs=include_costs
         )
     
-    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = False) -> None:
+    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
         """
         Comparer toutes les stratégies en utilisant la fonction compare_results.
         
@@ -154,6 +154,10 @@ class Strategy_Manager:
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
         
+        if backend not in ['matplotlib', 'seaborn', 'plotly']:
+            raise ValueError(f"Backend invalide. Valeurs possibles : {', '.join(['matplotlib', 'seaborn', 'plotly'])}")
+        
+        titre = 'avec' if include_costs else 'sans'
         
         if backend == 'matplotlib':
             # Graphique des rendements
@@ -165,7 +169,7 @@ class Strategy_Manager:
                 cumulative_returns = (1 + returns_to_use).cumprod()
                 plt.plot(cumulative_returns.index, cumulative_returns['portfolio'], label=f"{name} - portfolio")
 
-            plt.title('Rendements cumulatifs')
+            plt.title(f'Rendements cumulatifs {titre} coûts inclus')
             plt.grid(True)
             plt.legend()
                         
@@ -177,7 +181,7 @@ class Strategy_Manager:
                 cumulative_returns = (1 + returns_to_use).cumprod()
                 sns.lineplot(data=cumulative_returns['portfolio'], label=name)
 
-            plt.title('Rendements cumulatifs')
+            plt.title(f'Rendements cumulatifs {titre} coûts inclus')
             
         elif backend == 'plotly':
             # Graphique des rendements
@@ -196,7 +200,7 @@ class Strategy_Manager:
                 )
             
             fig_returns.update_layout(
-                title='Rendements cumulatifs',
+                title=f'Rendements cumulatifs {titre} coûts inclus',
                 showlegend=True,
                 height=600
             )
@@ -210,6 +214,9 @@ class Strategy_Manager:
         Args:
             backend: Backend de visualisation ('matplotlib', 'seaborn', ou 'plotly').
         """
+        if backend not in ['matplotlib', 'seaborn', 'plotly']:
+            raise ValueError(f"Backend invalide. Valeurs possibles : {', '.join(['matplotlib', 'seaborn', 'plotly'])}")
+        
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
                 

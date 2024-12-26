@@ -47,7 +47,7 @@ class Result:
         """Calcul des statistiques de performance de la stratégie"""
         
         total_return = (1 + self.returns).prod() - 1                                    # Performance total
-        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1           # Performance annualisé
+        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1 if len(self.returns) > 0 else pd.Series(0, index=self.returns.columns)        # Performance annualisé
         volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
 
         # Ratio de Sharpe
@@ -68,7 +68,15 @@ class Result:
 
         # CVaR (Conditional Value at Risk) à 95%
         cvar_95 = self.returns[self.returns <= var_95].mean() if len(self.returns[self.returns <= var_95]) > 0 else 0
-
+        cvar_95_test = pd.Series(
+                [col[col <= var].mean() if len(col[col <= var]) > 0 else 0 
+                 for col, var in zip(self.returns.items(), var_95)],
+                index=self.returns.columns
+            )
+        print('==================')
+        print(cvar_95)
+        print('zzzzzzzzzzzzzzz')
+        print(cvar_95_test)
         # Gain/Pertes moyen (Profit/Loss Ratio)
         avg_gain = self.returns[self.returns > 0].mean() if len(self.returns[self.returns > 0]) > 0 else 0
         avg_loss = self.returns[self.returns < 0].mean() if len(self.returns[self.returns < 0]) > 0 else 0
@@ -79,10 +87,13 @@ class Result:
 
         # Facteur de profitabilité
         profit_factor = self.returns.apply(lambda col: abs(col[col > 0].sum() / col[col < 0].sum()) if col[col < 0].sum() != 0 else 1)
-
+        
         # Nombre de trades
-        nb_trade = self.trades['asset'].value_counts()
-        nb_trade['portfolio'] = nb_trade.sum()
+        if not self.trades.empty:
+            nb_trade = self.trades['asset'].value_counts()
+            nb_trade['portfolio'] = nb_trade.sum()
+        else:
+            nb_trade = pd.Series(0, index=self.returns.columns)
 
         return {
             'total_return': total_return,
@@ -101,33 +112,37 @@ class Result:
 
     def plot(self, name_strat: str, backend: str = 'matplotlib', include_costs: bool = True):
         """Visualise les résultats du backtest."""
-        cumulative_returns = (1 + self.returns).cumprod() if include_costs else (1 + self.data.pct_change()).cumprod()
-    
+
+        if backend not in ['matplotlib', 'seaborn', 'plotly']:
+            raise ValueError(f"Backend invalide. Valeurs possibles : {', '.join(['matplotlib', 'seaborn', 'plotly'])}")
+        
+        returns_to_use = self.returns if include_costs else self.returns_no_cost
+        cumulative_returns = (1 + returns_to_use).cumprod()
+        
+        titre = 'avec' if include_costs else 'sans'
+
         if backend == 'matplotlib':
-            fig = plt.figure(figsize=(12, 6))
-            cumulative_returns.plot(title=f'Rendements cumulatifs {name_strat}')
+            #fig = plt.figure(figsize=(12, 6))
+            cumulative_returns.plot(title=f'Rendements cumulatifs {name_strat} {titre} coûts inclus')
             plt.tight_layout()
-            return fig
         
         elif backend == 'seaborn':
-            fig = plt.figure(figsize=(12, 6))
-            sns.lineplot(data=cumulative_returns).set_title(f'Rendements cumulatifs {name_strat}')
+            plt.figure(figsize=(12, 6))
+            sns.lineplot(data=cumulative_returns).set_title(f'Rendements cumulatifs {name_strat} {titre} coûts inclus')
             plt.tight_layout()
-            return fig
         
         elif backend == 'plotly':
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values,
-                                name='Rendements cumulatifs'))
+                                name=f'Rendements cumulatifs {titre} coûts inclus'))
             fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=600)
             fig.show()
-            return fig
 
 
 def compare_results(results: dict, backend: str = 'matplotlib'):
     """Compare les résultats de plusieurs stratégies."""
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
-    
+
     # liste des métrics avec valeurs très supérieur à 1 
     liste_sep = stats_comparison.loc[:, (stats_comparison > 20).any()].columns
 
@@ -141,7 +156,7 @@ def compare_results(results: dict, backend: str = 'matplotlib'):
 
         #ax1.set_ylabel('Nombre de Trades')
         ax1.set_xlabel('Stratégies')
-        ax1.set_title('Comparaison des Stratégies avec Num Trades Transparent')
+        ax1.set_title('Comparaison des Stratégies')
         ax1.tick_params(axis='x', rotation=45)
         ax1.legend(loc='upper left')
 
@@ -154,21 +169,49 @@ def compare_results(results: dict, backend: str = 'matplotlib'):
         plt.tight_layout()
 
     elif backend == 'seaborn':
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax1 = plt.subplots(figsize=(12, 6))
 
-        stats_long = stats_comparison.reset_index().melt(
+        # Convertir les données pour seaborn
+        stats_sep_long = stats_sep.reset_index().melt(
             id_vars='index', 
             var_name='Metric', 
             value_name='Value'
         )
+        stats_main_long = stats_main.reset_index().melt(
+            id_vars='index', 
+            var_name='Metric', 
+            value_name='Value'
+        )
+
+        # Graphique pour les métriques séparées
         sns.barplot(
-            data=stats_long,
+            data=stats_sep_long,
             x='index',
             y='Value',
             hue='Metric',
-            ax=ax
+            ax=ax1,
+            palette='coolwarm',
+            alpha=0.5
         )
-        ax.set_title('Comparaison des stratégies')
+        
+        ax1.set_xlabel('Stratégies')
+        ax1.set_title('Comparaison des Stratégies')
+        ax1.tick_params(axis='x', rotation=45)
+        ax1.legend(loc='upper left')
+
+        # Créer un axe secondaire
+        ax2 = ax1.twinx()
+
+        # Graphique pour les métriques principales
+        sns.barplot(
+            data=stats_main_long,
+            x='index',
+            y='Value',
+            hue='Metric',
+            ax=ax2
+        )
+        ax2.set_ylabel('Métriques')
+        ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
         plt.tight_layout()
 
     elif backend == 'plotly':
