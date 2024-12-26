@@ -68,15 +68,7 @@ class Result:
 
         # CVaR (Conditional Value at Risk) à 95%
         cvar_95 = self.returns[self.returns <= var_95].mean() if len(self.returns[self.returns <= var_95]) > 0 else 0
-        cvar_95_test = pd.Series(
-                [col[col <= var].mean() if len(col[col <= var]) > 0 else 0 
-                 for col, var in zip(self.returns.items(), var_95)],
-                index=self.returns.columns
-            )
-        print('==================')
-        print(cvar_95)
-        print('zzzzzzzzzzzzzzz')
-        print(cvar_95_test)
+        
         # Gain/Pertes moyen (Profit/Loss Ratio)
         avg_gain = self.returns[self.returns > 0].mean() if len(self.returns[self.returns > 0]) > 0 else 0
         avg_loss = self.returns[self.returns < 0].mean() if len(self.returns[self.returns < 0]) > 0 else 0
