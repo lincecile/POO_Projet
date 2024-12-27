@@ -13,19 +13,22 @@ class TestStrategy(unittest.TestCase):
     def setUp(self):
         dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
         self.sample_data = pd.DataFrame({
-            'price': np.random.randn(len(dates)).cumsum() + 10
+            'asset1': np.random.randn(len(dates)).cumsum()+100,
+            'asset2': np.random.randn(len(dates)).cumsum()+100
         }, index=dates)
         
     # Vérification que le décorateur fonctionne
     def test_strategy_decorator(self):
         @strategy
-        def simple_strategy(historical_data, current_position, rebalancing_frequency='D'):
-            return 1
-            
-        strat = simple_strategy()
+        def simple_strategy(historical_data, current_position, assets=None, rebalancing_frequency='D'):
+            assets = assets or historical_data.columns  # Use data columns if no assets specified
+            return {asset: 1 for asset in assets}
+        
+        strat = simple_strategy(assets=['asset1', 'asset2'])
         self.assertEqual(strat.rebalancing_frequency, 'D')
-        self.assertEqual(strat.get_position(self.sample_data, 0), 1, "La position doit être 1.")
-    
+        positions = strat.get_position(self.sample_data, {'asset1': 0, 'asset2': 0})
+        self.assertEqual(positions, {'asset1': 1, 'asset2': 1})
+
     # Vérification que la classe Strategy est bien une classe abstraite
     def test_abstract_strategy(self):
         with self.assertRaises(TypeError):

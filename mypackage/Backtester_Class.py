@@ -6,19 +6,6 @@ from typing import Union
 class Backtester:
     """Classe pour exécuter les backtests."""
     
-    def __init__(self, data: pd.DataFrame, transaction_costs: dict = None, slippage: dict = None):
-        """
-        Initialise le backtester multi-actifs.
-        
-        Args:
-            data: DataFrame avec les données de tous les actifs
-            transaction_costs: Dictionnaire des coûts de transaction par actif
-            slippage: Dictionnaire du slippage par actif
-        """
-        self.data = data
-        self.transaction_costs = transaction_costs or {col: 0.001 for col in data.columns}
-        self.slippage = slippage or {col: 0.0005 for col in data.columns}
-    
     def __init__(self, data: pd.DataFrame, transaction_costs: Union[float, dict] = None, slippage: Union[float, dict] = None):
         """
         Initialise le backtester avec des coûts sous format float ou dict.
@@ -103,7 +90,7 @@ class Backtester:
         
         # Tableau de position
         positions_df = pd.DataFrame(positions).set_index('timestamp')
-
+        print(positions_df)
         # Tableau de trade, possiblement vide
         trades_df = pd.DataFrame(trades).set_index('timestamp') if trades else pd.DataFrame()
 

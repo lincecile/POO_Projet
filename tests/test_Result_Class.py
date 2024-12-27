@@ -1,5 +1,5 @@
-# import matplotlib
-# matplotlib.use('Agg')  # backend non-interactif qui ne nécessite pas de serveur X ou d'interface graphique
+import matplotlib
+matplotlib.use('Agg')  # backend non-interactif qui ne nécessite pas de serveur X ou d'interface graphique
 import matplotlib.pyplot as plt
 from mypackage import Result
 import unittest
@@ -15,19 +15,23 @@ class TestResult(unittest.TestCase):
     def setUp(self):
         dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
         self.data = pd.DataFrame({
-            'price': np.random.randn(len(dates)).cumsum() + 100
+            'asset1': np.linspace(100, 110, len(dates)),  # Données linéaires croissantes
+            'asset2': np.linspace(100, 105, len(dates))   # Données linéaires croissantes différentes
         }, index=dates)
         
         self.positions = pd.DataFrame({
-            'position': [1] * len(dates)
+            'asset1': [1] * len(dates),
+            'asset2': [1] * len(dates)
         }, index=dates)
         
+        # Créer des trades fictifs
         self.trades = pd.DataFrame({
-            'from_pos': [0, 1, -1],
-            'to_pos': [1, -1, 0],
-            'cost': [0.001] * 3
-        }, index=dates[:3])
-        
+            'asset': ['asset1', 'asset2'] * 2,
+            'from_pos': [0, 0, 1, 1],
+            'to_pos': [1, 1, 0, 0],
+            'cost': [0.001] * 4
+        }, index=dates[:4])
+
         self.result = Result(self.data, self.positions, self.trades)
     
     # Vérification que la classe Result possède les bons attributs 
@@ -51,20 +55,17 @@ class TestResult(unittest.TestCase):
     # Vérification que les options de plotting fonctionnent 
     def test_plotting_backends(self):
 
-        # Ferme toutes les fenetres graphiques de potentiel test précédent
-        plt.close('all')
-
         # Test matplotlib 
         fig_mpl = self.result.plot("test_strat", backend='matplotlib')
-        self.assertIsNotNone(fig_mpl, "La comparaison des résultats doit produire un graphique.")
+        self.assertIsInstance(fig_mpl, plt.Figure)
         
         # Test seaborn 
         fig_sns = self.result.plot("test_strat", backend='seaborn')
-        self.assertIsNotNone(fig_sns, "La comparaison des résultats doit produire un graphique.")
+        self.assertIsInstance(fig_sns, plt.Figure)
         
         # Test plotly 
         fig_plotly = self.result.plot("test_strat", backend='plotly')
-        self.assertIsNotNone(fig_plotly, "La comparaison des résultats doit produire un graphique.")
+        self.assertIsNotNone(fig_plotly)
 
 
 if __name__ == '__main__':

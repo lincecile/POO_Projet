@@ -114,24 +114,27 @@ class Result:
         titre = 'avec' if include_costs else 'sans'
 
         if backend == 'matplotlib':
-            #fig = plt.figure(figsize=(12, 6))
-            cumulative_returns.plot(title=f'Rendements cumulatifs {name_strat} {titre} coûts inclus')
-            plt.tight_layout()
+            return cumulative_returns.plot(
+                title=f'Rendements cumulatifs {name_strat} {titre} coûts inclus',
+                figsize=(12, 6)
+            ).get_figure()
         
         elif backend == 'seaborn':
-            plt.figure(figsize=(12, 6))
-            sns.lineplot(data=cumulative_returns).set_title(f'Rendements cumulatifs {name_strat} {titre} coûts inclus')
+            fig, ax = plt.subplots(figsize=(12, 6))
+            sns.lineplot(data=cumulative_returns, ax=ax)
+            ax.set_title(f'Rendements cumulatifs {name_strat} {titre} coûts inclus')
             plt.tight_layout()
+            return fig
         
         elif backend == 'plotly':
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values,
                                 name=f'Rendements cumulatifs {titre} coûts inclus'))
             fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=600)
-            fig.show()
+            return fig
 
 
-def compare_results(results: dict, backend: str = 'matplotlib'):
+def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool = True):
     """Compare les résultats de plusieurs stratégies."""
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
 
@@ -211,6 +214,5 @@ def compare_results(results: dict, backend: str = 'matplotlib'):
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(name=col, x=list(stats_comparison.index), y=stats_comparison[col]))
         fig.update_layout(title='Comparaison des stratégies', barmode='group', height=600)
-        fig.show()
 
-        return fig
+    return fig
