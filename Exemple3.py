@@ -14,6 +14,32 @@ all_asset = data.columns.to_list()
 
 # Création d'une stratégie par héritage
 
+# 
+
+class DayVariationStrategy(Strategy):
+    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
+        """
+        Stratégie qui achète si le prix du jour est supérieur à celui de la veille,
+        et vend dans le cas contraire.
+        
+        Args:
+            historical_data (pd.DataFrame): Données historiques avec une colonne "close".
+            current_position (float): Position actuelle.
+            
+        Returns:
+            float: Nouvelle position désirée (-1 ou 1).
+        """
+        if len(historical_data) < 2:
+            return 0.0  # Pas de changement si nous n'avons pas assez de données
+        
+        # Prix actuel et précédent
+        current_price = historical_data['close'].iloc[-1]
+        previous_price = historical_data['close'].iloc[-2]
+        
+        # Acheter si le prix a augmenté, vendre sinon
+        return 1.0 if current_price > previous_price else -1.0
+
+# 
 class MovingAverageCrossover(Strategy):
     """Stratégie de croisement de moyennes mobiles pour plusieurs actifs."""
     
