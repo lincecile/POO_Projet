@@ -47,7 +47,7 @@ class Result:
         """Calcul des statistiques de performance de la stratégie"""
         
         total_return = (1 + self.returns).prod() - 1                                    # Performance total
-        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1 if len(self.returns) > 0 else pd.Series(0, index=self.returns.columns)        # Performance annualisé
+        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1 if len(self.returns) > 0 else pd.Series(0, index=self.returns.columns)        # Performance annualisée
         volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
 
         # Ratio de Sharpe
@@ -60,14 +60,14 @@ class Result:
 
         # Ratio de Sortino
         downside_returns = self.returns[self.returns < 0]
-        downside_deviation = (np.sqrt((downside_returns ** 2).mean()) * np.sqrt(252) if not downside_returns.empty else 0)
+        downside_deviation = self.returns[self.returns < 0].apply(lambda col: np.sqrt((col ** 2).mean()) * np.sqrt(252) if not col.empty else 0, axis=0)
         sortino_ratio = pd.Series([an_return / dev if dev != 0 else np.nan for an_return, dev in zip(annual_return, downside_deviation)], index=annual_return.index)
         
         # VaR (Value at Risk) à 95%
         var_95 = self.returns.apply(lambda col: col.quantile(0.05))
 
         # CVaR (Conditional Value at Risk) à 95%
-        cvar_95 = self.returns[self.returns <= var_95].mean() if len(self.returns[self.returns <= var_95]) > 0 else 0
+        cvar_95 = self.returns.apply(lambda col: col[col <= col.quantile(0.05)].mean() if len(col[col <= col.quantile(0.05)]) > 0 else 0)
         
         # Gain/Pertes moyen (Profit/Loss Ratio)
         avg_gain = self.returns[self.returns > 0].mean() if len(self.returns[self.returns > 0]) > 0 else 0
