@@ -13,7 +13,8 @@ class TestStrategy(unittest.TestCase):
     def setUp(self):
         dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
         self.sample_data = pd.DataFrame({
-            'price': np.random.randn(len(dates)).cumsum() + 10
+            'asset1': np.random.randn(len(dates)).cumsum()+100,
+            'asset2': np.random.randn(len(dates)).cumsum()+100
         }, index=dates)
         
     # Vérification que le décorateur fonctionne

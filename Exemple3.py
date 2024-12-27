@@ -281,4 +281,3 @@ manager.plot_strategy(strategy_name="ma_strat_default",backend=backend,include_c
 # Compare all strategies
 manager.compare_strategies(backend=backend)
 
-plt.show()

@@ -224,6 +224,8 @@ class Strategy_Manager:
         
         if backend == 'plotly':
             fig.show()
+        else:
+            plt.show()
 
     def print_statistics(self, strategy_name: Union[str, None] = None, detail=False) -> None:
         """

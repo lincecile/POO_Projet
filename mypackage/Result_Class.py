@@ -211,6 +211,5 @@ def compare_results(results: dict, backend: str = 'matplotlib'):
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(name=col, x=list(stats_comparison.index), y=stats_comparison[col]))
         fig.update_layout(title='Comparaison des stratégies', barmode='group', height=600)
-        fig.show()
 
-        return fig
+    return fig

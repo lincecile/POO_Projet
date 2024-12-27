@@ -13,20 +13,22 @@ class TestResult(unittest.TestCase):
 
     # Création data fictive
     def setUp(self):
-        dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
+        dates = pd.date_range(start='2024-01-01', end='2024-01-02', freq='D')
+        dates_df = [date.strftime('%Y-%m-%d') for date in dates for _ in range(2)]
         self.data = pd.DataFrame({
-            'price': np.random.randn(len(dates)).cumsum() + 100
+            'asset1': np.random.randn(len(dates)).cumsum()+100,
+            'asset2': np.random.randn(len(dates)).cumsum()+100
         }, index=dates)
         
-        self.positions = pd.DataFrame({
-            'position': [1] * len(dates)
-        }, index=dates)
+        self.positions = pd.DataFrame({'asset1': [1]*len(dates),
+            'asset2': [1]*len(dates)}, index=dates)
         
         self.trades = pd.DataFrame({
-            'from_pos': [0, 1, -1],
-            'to_pos': [1, -1, 0],
-            'cost': [0.001] * 3
-        }, index=dates[:3])
+            'asset': ['asset1', 'asset2','asset1', 'asset2'],
+            'from_pos': [0, 1, 0, 1],
+            'to_pos': [1, -1, 0, 1],
+            'cost': [0.001] * 4
+        }, index=dates_df)
         
         self.result = Result(self.data, self.positions, self.trades)
     
@@ -50,9 +52,6 @@ class TestResult(unittest.TestCase):
     
     # Vérification que les options de plotting fonctionnent 
     def test_plotting_backends(self):
-
-        # Ferme toutes les fenetres graphiques de potentiel test précédent
-        plt.close('all')
 
         # Test matplotlib 
         fig_mpl = self.result.plot("test_strat", backend='matplotlib')
