@@ -52,47 +52,70 @@ def momentum_strategy(historical_data, current_position, assets, rebalancing_fre
     Calcule un signal de trading basé sur le momentum pour plusieurs actifs.
     
     Args:
-        historical_data: DataFrame avec les données historiques
-        current_position: Position actuelle
-        assets: Liste des actifs
-        rebalancing_frequency: Fréquence de rebalancement
-        chosen_window: Fenêtre pour le calcul du momentum
+        historical_data (pd.DataFrame): Données historiques avec les prix des actifs.
+        current_position (dict): Positions actuelles sur les actifs.
+        assets (list): Liste des actifs à trader.
+        rebalancing_frequency (str): Fréquence de rééquilibrage ('D', 'W', etc.).
+        chosen_window (int): Fenêtre de temps pour le calcul du momentum (en périodes).
     
     Returns:
-        dict: Positions pour chaque actif
+        dict: Positions pondérées pour chaque actif.
     """
+    # Vérifie si suffisamment de données sont disponibles pour la fenêtre choisie
     if len(historical_data) < chosen_window:
         return {asset: 0 for asset in assets}
 
     positions = {}
-    active_assets = []  # Liste pour suivre les actifs avec un signal valide
+    active_assets = []  # Liste pour enregistrer les actifs ayant des signaux valides
     
     for asset in assets:
         try:
+            # Calcul du rendement à la période donnée (momentum)
             returns = historical_data[asset].pct_change(chosen_window)
-            # Vérifier si le dernier rendement est valide
-            if pd.isna(returns.iloc[-1]):
+            
+            # Vérifie si le dernier rendement est valide
+            if pd.isna(returns.iloc[-1]) or len(returns) == 0:
                 positions[asset] = 0
             else:
-                # Signal 1 si momentum positif, -1 si négatif
+                # Génère un signal : 1 si momentum positif, -1 si négatif
                 signal = 1 if returns.iloc[-1] > 0 else -1
                 positions[asset] = signal
                 active_assets.append(asset)
-        except Exception:
-            # En cas d'erreur dans le calcul, position neutre
+        except KeyError:
+            # Actif manquant dans les données historiques
             positions[asset] = 0
+        except Exception as e:
+            # Capture et ignore les erreurs inattendues
+            positions[asset] = 0
+            print(f"Erreur pour l'actif {asset}: {e}")
     
-    # Ajuster les positions si des actifs actifs existent
+    # Ajuste les positions uniquement pour les actifs actifs
     if active_assets:
-        allocation_size = 1.0 / len(active_assets)
-        for asset in assets:
-            if asset in active_assets:
-                positions[asset] *= allocation_size
-                
+        allocation_size = 1.0 / len(active_assets)  # Allocation égale pour chaque actif actif
+        for asset in active_assets:
+            positions[asset] *= allocation_size
+    
     return positions
 
+
 class VolatilityBasedStrategy(Strategy):
+    """
+    Stratégie basée sur la volatilité des actifs.
+    
+    Si la volatilité d'un actif dépasse un seuil donné, une position short est prise.
+    Si la volatilité est inférieure au seuil, une position long est prise.
+    """
+
     def __init__(self, assets, volatility_threshold=0.02, window_size=10, rebalancing_frequency='D', allocation_method='equal'):
+        """
+        Initialise la stratégie avec les paramètres donnés.
+
+        :param assets: Liste des actifs à trader.
+        :param volatility_threshold: Seuil pour décider entre position long/short.
+        :param window_size: Fenêtre pour le calcul de la volatilité.
+        :param rebalancing_frequency: Fréquence de rééquilibrage ('D', 'W', etc.).
+        :param allocation_method: Méthode d'allocation ('equal' ou 'volatility_weighted').
+        """
         super().__init__(rebalancing_frequency=rebalancing_frequency, assets=assets)
         self.volatility_threshold = volatility_threshold
         self.window_size = window_size
@@ -100,7 +123,11 @@ class VolatilityBasedStrategy(Strategy):
         self.allocation_method = allocation_method
 
     def fit(self, data: pd.DataFrame) -> None:
-        """Calcule la volatilité historique pour chaque actif."""
+        """
+        Calcule la volatilité historique pour chaque actif.
+
+        :param data: Données historiques (prix des actifs).
+        """
         self.volatility = {}
         for asset in self.assets:
             daily_returns = data[asset].pct_change()
@@ -109,7 +136,10 @@ class VolatilityBasedStrategy(Strategy):
     def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
         """
         Détermine les positions basées sur la volatilité de chaque actif.
-        Une forte volatilité conduit à une position short, une faible volatilité à une position long.
+
+        :param historical_data: Données historiques des actifs.
+        :param current_position: Positions actuelles.
+        :return: Dictionnaire des positions pour chaque actif.
         """
         if self.volatility is None:
             raise ValueError("La méthode fit() doit être appelée avant get_position().")
@@ -119,17 +149,18 @@ class VolatilityBasedStrategy(Strategy):
         
         # Déterminer les signaux pour chaque actif
         for asset in self.assets:
-            current_vol = self.volatility[asset].iloc[-1]
+            current_vol = self.volatility[asset].iloc[-1] if asset in self.volatility else None
             
             if current_vol is None or pd.isna(current_vol):
+                # Actif sans données valides
                 positions[asset] = 0
             else:
+                # Décider entre position short ou long
                 if current_vol > self.volatility_threshold:
-                    positions[asset] = -1
-                    active_assets.append(asset)
+                    positions[asset] = -1  # Position short
                 else:
-                    positions[asset] = 1
-                    active_assets.append(asset)
+                    positions[asset] = 1  # Position long
+                active_assets.append(asset)
         
         # Ajuster les allocations selon la méthode choisie
         if active_assets:
@@ -137,8 +168,9 @@ class VolatilityBasedStrategy(Strategy):
                 position_size = 1.0 / len(active_assets)
                 for asset in active_assets:
                     positions[asset] *= position_size
-            else:  # 'volatility_weighted'
+            elif self.allocation_method == 'volatility_weighted':
                 total_vol = sum(self.volatility[asset].iloc[-1] for asset in active_assets)
+                total_vol = total_vol or 1  # Évite division par zéro
                 for asset in active_assets:
                     weight = self.volatility[asset].iloc[-1] / total_vol
                     positions[asset] *= weight
@@ -146,18 +178,42 @@ class VolatilityBasedStrategy(Strategy):
         return positions
 
 class MCOBasedStrategy(Strategy):
+    """
+    Stratégie basée sur la déviation du prix actuel par rapport au coût moyen des actifs.
+    Une forte déviation positive conduit à une position short, une forte déviation négative à une position long.
+    """
+
     def __init__(self, assets, threshold: float = 0.05, initial_position_costs: dict = None, rebalancing_frequency: str = 'D'):
+        """
+        Initialise la stratégie.
+
+        :param assets: Liste des actifs à trader.
+        :param threshold: Seuil de déviation du prix pour prendre une position.
+        :param initial_position_costs: Coûts moyens initiaux pour chaque actif.
+        :param rebalancing_frequency: Fréquence de rééquilibrage ('D', 'W', etc.).
+        """
         super().__init__(rebalancing_frequency=rebalancing_frequency, assets=assets)
         self.threshold = threshold
         self.average_costs = None
         self.initial_position_costs = initial_position_costs or {asset: 0 for asset in assets}
 
     def fit(self, data: pd.DataFrame) -> None:
-        """Initialise le coût moyen pour chaque actif."""
+        """
+        Initialise les coûts moyens pour chaque actif.
+
+        :param data: Données historiques utilisées pour initialiser la stratégie.
+        """
         self.average_costs = self.initial_position_costs.copy()
 
     def update_average_cost(self, asset: str, executed_price: float, executed_quantity: float, current_position: float) -> None:
-        """Met à jour le coût moyen pour un actif spécifique."""
+        """
+        Met à jour le coût moyen pour un actif spécifique après une transaction.
+
+        :param asset: Nom de l'actif.
+        :param executed_price: Prix d'exécution de la transaction.
+        :param executed_quantity: Quantité exécutée.
+        :param current_position: Position actuelle avant la transaction.
+        """
         new_position = current_position + executed_quantity
         if new_position == 0:
             self.average_costs[asset] = self.initial_position_costs[asset]
@@ -169,10 +225,13 @@ class MCOBasedStrategy(Strategy):
     def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
         """
         Calcule les positions basées sur la déviation du prix par rapport au coût moyen.
-        Une déviation positive conduit à une position short, négative à une position long.
+
+        :param historical_data: Données historiques avec les prix des actifs.
+        :param current_position: Positions actuelles des actifs.
+        :return: Dictionnaire des positions calculées.
         """
         if self.average_costs is None:
-            raise ValueError("Les coûts moyens doivent être initialisés avec la méthode fit()")
+            raise ValueError("Les coûts moyens doivent être initialisés avec la méthode fit().")
         
         positions = {}
         active_assets = []
@@ -195,10 +254,10 @@ class MCOBasedStrategy(Strategy):
             price_deviation = (current_price - avg_cost) / avg_cost
 
             if price_deviation > self.threshold:
-                positions[asset] = -1
+                positions[asset] = -1  # Position short
                 active_assets.append(asset)
             elif price_deviation < -self.threshold:
-                positions[asset] = 1
+                positions[asset] = 1  # Position long
                 active_assets.append(asset)
             else:
                 positions[asset] = 0
@@ -210,6 +269,7 @@ class MCOBasedStrategy(Strategy):
                 positions[asset] *= position_size
                 
         return positions
+
 
 
 # Création des instances et exécution des backtests
