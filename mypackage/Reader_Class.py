@@ -51,16 +51,6 @@ class DataFileReader:
         except Exception as e:
             raise ValueError(f"Impossible de lire le fichier {filepath}: {str(e)}")
     
-    def _detect_date_column(self, df: pd.DataFrame) -> Optional[str]:
-        """Trouve la colonne de date"""
-        for col in df.columns:
-            try:
-                pd.to_datetime(df[col])
-                return col
-            except:
-                continue
-        return None
-    
     def _read_csv(self, filepath: Path, date_column: Optional[str] = None) -> pd.DataFrame:
         """Lire un fichier CSV."""
         try:
@@ -68,16 +58,14 @@ class DataFileReader:
             
             # Si la colonne de date n'est pas indiqué
             if date_column is None:
-                date_column = self._detect_date_column(data)
-                if date_column is None:
-                    raise ValueError(f"Il faut une colonne de date dans le fichier")
+                raise ValueError(f"Il faut indiquer une colonne de date dans le fichier")
             
             # Formattage de la colonne de date
             try:
                 data[date_column] = pd.to_datetime(data[date_column], format=self.date_format)
-            except ValueError:
+            except Exception as e:
                 # Si le format des dates indiqué par l'utilisateur n'est pas correct
-                data[date_column] = pd.to_datetime(data[date_column])
+                raise ValueError(f"Le format de date indiqué n'est pas le bon")
             
             # Les dates sont les indices du dataframe
             data.set_index(date_column, inplace=True)
@@ -96,7 +84,7 @@ class DataFileReader:
         try:
             data = pd.read_parquet(filepath)
             
-            # Si la colonne de date n'est pas indiqué et que les indices ne sont pas dates
+            # Si la colonne de date n'est pas indiqué et que les indices ne sont pas des dates
             if date_column is not None and not isinstance(data.index, pd.DatetimeIndex):
                 if date_column in data.columns:
                     data.set_index(date_column, inplace=True)

@@ -5,7 +5,7 @@ class Strategy(ABC):
     """Classe abstraite de base pour les stratégies de trading."""
     
     def __init__(self, rebalancing_frequency: str = 'D', assets: list = None):
-        self.rebalancing_frequency = rebalancing_frequency      # fréquence de rééquilibrage pour chaque stratégie
+        self.rebalancing_frequency = rebalancing_frequency      # Fréquence de rééquilibrage pour chaque stratégie
         self.assets = assets or []                              # Liste des actifs
 
     @abstractmethod 
@@ -18,7 +18,7 @@ class Strategy(ABC):
             current_position: Position actuelle
             
         Returns:
-            float: Position désirée (-1 à 1)
+            float: Position désirée 
         """
         pass
     

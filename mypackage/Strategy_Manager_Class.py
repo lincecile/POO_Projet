@@ -41,8 +41,7 @@ class Strategy_Manager:
         for name, strategy_tuple in strategies_dict.items():
             self.add_strategy(name, *strategy_tuple)
     
-    def add_strategy(self, name: str, strategy: Strategy, 
-                transaction_costs: Union[float, dict] = 0.001, 
+    def add_strategy(self, name: str, strategy: Strategy, transaction_costs: Union[float, dict] = 0.001, 
                 slippage: Union[float, dict] = 0.0005) -> None:
         """
         Ajout d'une stratégie au gestionnaire.
@@ -91,7 +90,7 @@ class Strategy_Manager:
         if not self.results:
             raise ValueError("Il faut lancer le backtest d'abord.")
         
-        # Pour une stratégie particuliere
+        # Pour les statistiques d'une stratégie particuliere
         if strategy_name is not None:
             if strategy_name not in self.results:
                 raise ValueError(f"Pas de stratégie à ce nom : '{strategy_name}'")
@@ -101,7 +100,7 @@ class Strategy_Manager:
     
     def get_statistics_detail(self, strategy_name: Union[str, None] = None) -> Union[Dict, pd.DataFrame]:
         """
-        Obtenir les statistiques pour une stratégie ou pour toutes les stratégies.
+        Obtenir les statistiques détaillées pour une stratégie ou pour toutes les stratégies.
         
         Args:
             strategy_name: Nom d'une stratégie spécifique, ou None pour toutes les stratégies.
@@ -167,9 +166,9 @@ class Strategy_Manager:
         if backend == 'matplotlib':
             # Graphique des rendements
             plt.figure(figsize=(12, 6))
-
+            
+            # Utilisation des returns déjà calculés
             for name, result in self.results.items():
-                # Utilisation des returns déjà calculés
                 returns_to_use = result.returns if include_costs else result.returns_no_cost
                 cumulative_returns = (1 + returns_to_use).cumprod()
                 plt.plot(cumulative_returns.index, cumulative_returns['portfolio'], label=f"{name} - portfolio")
@@ -227,7 +226,7 @@ class Strategy_Manager:
         
         if not self.results:
             raise ValueError("Pas de backtest sur les stratégies.")
-                
+        
         fig = compare_results(self.results,backend=backend)
         
         if show_plot and backend == 'plotly':
@@ -247,6 +246,7 @@ class Strategy_Manager:
 
         strat_name = strategy_name if strategy_name is not None else ''
 
+        # Affichage des statistiques pour une ou toutes les statégies
         if isinstance(stats, dict):
             print(f"\nStatistiques de la strategie '{strat_name}':")
             df_choisi = pd.DataFrame(stats,index=[strat_name])

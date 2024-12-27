@@ -14,13 +14,13 @@ class Result:
         self.positions = positions
         self.trades = trades
         self.returns, self.returns_no_cost = self._calculate_returns()
-        
         statistics = self._calculate_statistics()
         self.statistics = {key: series['portfolio'] for key, series in statistics.items()}
         self.statistics_each_asset = {key: series.drop('portfolio') for key, series in statistics.items()}
 
     def _calculate_returns(self) -> pd.DataFrame:
         """Calcul des rendements de la stratégie pour chaque actif"""
+
         returns = pd.DataFrame(index=self.positions.index)
         returns_without_cost = pd.DataFrame(index=self.positions.index)
 
@@ -38,17 +38,22 @@ class Result:
             returns[asset] = strategy_returns.fillna(0)
         
         # Ajout d'une colonne pour le rendement total du portefeuille
-        returns['portfolio'] = returns.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
-        returns_without_cost['portfolio'] = returns_without_cost.mean(axis=1)  # Moyenne simple, peut être modifiée pour pondération personnalisée
+        returns['portfolio'] = returns.mean(axis=1)  
+        returns_without_cost['portfolio'] = returns_without_cost.mean(axis=1)  
 
         return returns, returns_without_cost
     
     def _calculate_statistics(self) -> dict:
         """Calcul des statistiques de performance de la stratégie"""
         
-        total_return = (1 + self.returns).prod() - 1                                    # Performance total
-        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1 if len(self.returns) > 0 else pd.Series(0, index=self.returns.columns)        # Performance annualisée
-        volatility = self.returns.std() * np.sqrt(252)                                  # Volatilité annualisée
+        # Performance total
+        total_return = (1 + self.returns).prod() - 1 
+
+        # Performance annualisée                                   
+        annual_return = ((1 + total_return) ** (252 / len(self.returns))) - 1 if len(self.returns) > 0 else pd.Series(0, index=self.returns.columns)        
+        
+        # Volatilité annualisée
+        volatility = self.returns.std() * np.sqrt(252)                                  
 
         # Ratio de Sharpe
         sharpe_ratio = pd.Series([an_return / vol if vol != 0 else 0 for an_return, vol in zip(annual_return, volatility)], index=annual_return.index)
@@ -105,9 +110,11 @@ class Result:
     def plot(self, name_strat: str, backend: str = 'matplotlib', include_costs: bool = True):
         """Visualise les résultats du backtest."""
 
+        # Vérification du backend entré par l'utilisateur
         if backend not in ['matplotlib', 'seaborn', 'plotly']:
             raise ValueError(f"Backend invalide. Valeurs possibles : {', '.join(['matplotlib', 'seaborn', 'plotly'])}")
         
+        # Calcul le return cumulé
         returns_to_use = self.returns if include_costs else self.returns_no_cost
         cumulative_returns = (1 + returns_to_use).cumprod()
         
@@ -136,9 +143,11 @@ class Result:
 
 def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool = True):
     """Compare les résultats de plusieurs stratégies."""
+
+    # Tableau des statistiques calculés
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
 
-    # liste des métrics avec valeurs très supérieur à 1 
+    # Liste des métrics avec valeurs très supérieur à 1 
     liste_sep = stats_comparison.loc[:, (stats_comparison > 20).any()].columns
 
     # Statistiques pour chaque dictionnaire
@@ -147,17 +156,18 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
 
     if backend == 'matplotlib':
         fig, ax1 = plt.subplots(figsize=(12, 6))
+
+        # Graphique pour les métriques séparées
         stats_sep.plot(kind='bar', ax=ax1, color='lightblue', alpha=0.5, label=liste_sep)
 
-        #ax1.set_ylabel('Nombre de Trades')
         ax1.set_xlabel('Stratégies')
         ax1.set_title('Comparaison des Stratégies')
         ax1.tick_params(axis='x', rotation=45)
         ax1.legend(loc='upper left')
 
+        # Graphique pour les autres métriques
         ax2 = ax1.twinx()
-        #other_metrics_normalized = other_metrics / other_metrics.abs().max()
-        stats_main.plot(kind='bar', ax=ax2)#, alpha=0.7, width=0.8)
+        stats_main.plot(kind='bar', ax=ax2)
 
         ax2.set_ylabel('Métriques')
         ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
@@ -211,6 +221,8 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
 
     elif backend == 'plotly':
         fig = go.Figure()
+
+        # Pas de séparation implémenté puisque graphique dynamique
         for col in stats_comparison.columns:
             fig.add_trace(go.Bar(name=col, x=list(stats_comparison.index), y=stats_comparison[col]))
         fig.update_layout(title='Comparaison des stratégies', barmode='group', height=600)

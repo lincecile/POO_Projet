@@ -22,7 +22,7 @@ class Backtester:
     def _process_costs(self, costs: Union[float, dict, None], default: float) -> dict:
         """Convert costs input to dictionary format."""
 
-        # Si l'utilisateur a entré un dictionnaire complet de coût
+        # Si l'utilisateur entre un dictionnaire complet de coût
         if isinstance(costs, dict) and len(costs) == len(self.data.columns):
             return costs
         
@@ -30,7 +30,7 @@ class Backtester:
         elif isinstance(costs, float):
             return {col: costs for col in self.data.columns}
         
-        # Si l'utilisateur entre uniquement un dictionnaire des actifs concernés par les coûts
+        # Si l'utilisateur entre uniquement un dictionnaire des actifs concernés par les coûts différents
         elif isinstance(costs, dict):
             processed_costs = {col: default for col in self.data.columns}
             processed_costs.update(costs)        
@@ -90,7 +90,7 @@ class Backtester:
         
         # Tableau de position
         positions_df = pd.DataFrame(positions).set_index('timestamp')
-        print(positions_df)
+
         # Tableau de trade, possiblement vide
         trades_df = pd.DataFrame(trades).set_index('timestamp') if trades else pd.DataFrame()
 
