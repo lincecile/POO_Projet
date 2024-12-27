@@ -12,11 +12,23 @@ class TestCompareResults(unittest.TestCase):
     def test_compare_results_different_backends(self):
 
         dates = pd.date_range(start='2024-01-01', end='2024-01-10', freq='D')
-        data = pd.DataFrame({'asset1': np.random.randn(len(dates)).cumsum()+100,
-            'asset2': np.random.randn(len(dates)).cumsum()+100}, index=dates)
-        positions = pd.DataFrame({'asset1': [1]*len(dates),
-            'asset2': [1]*len(dates)}, index=dates)
-        trades = pd.DataFrame()
+        data = pd.DataFrame({
+            'asset1': np.linspace(100, 110, len(dates)),  # Données linéaires croissantes
+            'asset2': np.linspace(100, 105, len(dates))   # Données linéaires croissantes différentes
+        }, index=dates)
+        
+        positions = pd.DataFrame({
+            'asset1': [1] * len(dates),
+            'asset2': [1] * len(dates)
+        }, index=dates)
+        
+        # Créer des trades fictifs
+        trades = pd.DataFrame({
+            'asset': ['asset1', 'asset2'] * 2,
+            'from_pos': [0, 0, 1, 1],
+            'to_pos': [1, 1, 0, 0],
+            'cost': [0.001] * 4
+        }, index=dates[:4])
         
         result1 = Result(data, positions, trades)
         result2 = Result(data, positions, trades)

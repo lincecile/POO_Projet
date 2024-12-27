@@ -126,7 +126,7 @@ class Strategy_Manager:
 
         return data
     
-    def plot_strategy(self, strategy_name: str, backend: str = 'matplotlib', include_costs: bool = True) -> None:
+    def plot_strategy(self, strategy_name: str, backend: str = 'matplotlib', include_costs: bool = True, show_plot: bool = True) -> None:
         """
         Graphique des résultats pour une stratégie spécifique.
         
@@ -138,13 +138,18 @@ class Strategy_Manager:
         if strategy_name not in self.results:
             raise ValueError(f"Pas de backtest à ce nom : '{strategy_name}'")
         
-        self.results[strategy_name].plot(
+        fig = self.results[strategy_name].plot(
             name_strat=strategy_name,
             backend=backend,
-            include_costs=include_costs
+            include_costs=include_costs,
         )
+
+        if show_plot and backend == 'plotly':
+            fig.show()
+        elif show_plot and backend != 'plotly':
+            plt.show()
     
-    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True) -> None:
+    def plot_all_strategies(self, backend: str = 'matplotlib', include_costs: bool = True, show_plot: bool = True) -> None:
         """
         Comparer toutes les stratégies en utilisant la fonction compare_results.
         
@@ -205,9 +210,12 @@ class Strategy_Manager:
                 height=600
             )
             
+        if show_plot and backend == 'plotly':
             fig_returns.show()
+        elif show_plot and backend != 'plotly':
+            plt.show()
 
-    def compare_strategies(self, backend: str = 'matplotlib') -> None:
+    def compare_strategies(self, backend: str = 'matplotlib', show_plot: bool = True) -> None:
         """
         Comparer toutes les stratégies en utilisant la fonction compare_results.
         
@@ -222,9 +230,9 @@ class Strategy_Manager:
                 
         fig = compare_results(self.results,backend=backend)
         
-        if backend == 'plotly':
+        if show_plot and backend == 'plotly':
             fig.show()
-        else:
+        elif show_plot and backend != 'plotly':
             plt.show()
 
     def print_statistics(self, strategy_name: Union[str, None] = None, detail=False) -> None:

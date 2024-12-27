@@ -268,7 +268,7 @@ manager.print_statistics(detail=True)
 
 
 # Visualize results
-backend = 'matplotlib' # 'plotly' # 'matplotlib' # 'seaborn'
+backend = 'seaborn' # 'plotly' # 'matplotlib' # 'seaborn'
 
 # Plot individual strategies
 manager.plot_all_strategies(backend=backend,include_costs=True)
