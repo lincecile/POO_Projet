@@ -135,9 +135,51 @@ class Result:
         
         elif backend == 'plotly':
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values,
-                                name=f'Rendements cumulatifs {titre} coûts inclus'))
-            fig.update_layout(title_text=f'Résultats du Backtest {name_strat}', height=600)
+            # Pour chaque colonne dans les rendements cumulatifs
+            if isinstance(cumulative_returns, pd.Series):
+                fig.add_trace(go.Scatter(
+                    x=cumulative_returns.index,
+                    y=cumulative_returns,
+                    mode='lines',
+                    name=name_strat
+                ))
+            else:  # Si c'est un DataFrame avec plusieurs colonnes
+                for col in cumulative_returns.columns:
+                    fig.add_trace(go.Scatter(
+                        x=cumulative_returns.index,
+                        y=cumulative_returns[col],
+                        mode='lines',
+                        name=col
+                    ))
+
+            # Mise à jour du layout pour correspondre au style matplotlib
+            fig.update_layout(
+                title={
+                    'text': f'Rendements cumulatifs {name_strat} {titre} coûts inclus',
+                    'x': 0.5,
+                    'y': 0.95
+                },
+                height=600,
+                width=1000,
+                xaxis_title="Date",
+                yaxis_title="Rendement cumulé",
+                template='plotly_white',
+                showlegend=True,
+                # Placer la légende à droite du graphique
+                legend={
+                    'orientation': 'v',
+                    'yanchor': 'middle',
+                    'y': 0.5,
+                    'xanchor': 'left',
+                    'x': 1.05,
+                    'bgcolor': 'rgba(255, 255, 255, 0.8)',  # Fond légèrement transparent
+                    'bordercolor': 'rgba(0, 0, 0, 0.2)',    # Bordure légère
+                    'borderwidth': 1
+                },
+                # Ajuster les marges pour faire de la place à la légende
+                margin={'l': 50, 'r': 150, 't': 60, 'b': 50}
+            )
+
             return fig
 
 

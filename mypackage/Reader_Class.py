@@ -14,7 +14,7 @@ class DataFileReader:
         """
         self.date_format = date_format
     
-    def read_file(self, filepath: Union[str, Path], date_column: Optional[str] = None) -> pd.DataFrame:
+    def read_file(self, filepath: Union[str, Path], date_column: str = None) -> pd.DataFrame:
         """
         Lire un fichier de données (CSV ou Parquet) et retourner un DataFrame correctement formaté.
         
@@ -51,51 +51,52 @@ class DataFileReader:
         except Exception as e:
             raise ValueError(f"Impossible de lire le fichier {filepath}: {str(e)}")
     
-    def _read_csv(self, filepath: Path, date_column: Optional[str] = None) -> pd.DataFrame:
+    def _read_csv(self, filepath: Path, date_column: str = None) -> pd.DataFrame:
         """Lire un fichier CSV."""
+
         try:
             data = pd.read_csv(filepath, sep=';').replace(',', '.', regex=True)
-            
-            # Si la colonne de date n'est pas indiqué
-            if date_column is None:
-                raise ValueError(f"Il faut indiquer une colonne de date dans le fichier")
-            
-            # Formattage de la colonne de date
-            try:
-                data[date_column] = pd.to_datetime(data[date_column], format=self.date_format)
-            except Exception as e:
-                # Si le format des dates indiqué par l'utilisateur n'est pas correct
-                raise ValueError(f"Le format de date indiqué n'est pas le bon")
-            
-            # Les dates sont les indices du dataframe
-            data.set_index(date_column, inplace=True)
-            
-            # Conversion des colonnes en float
-            for col in data.columns:
-                data[col] = pd.to_numeric(data[col], errors='coerce')
-            
-            return data
-            
         except Exception as e:
-            raise ValueError(f"Erreur lors de la lecture du CSV: {str(e)}")
-    
-    def _read_parquet(self, filepath: Path, date_column: Optional[str] = None) -> pd.DataFrame:
-        """Lire un fichier Parquet."""
+            raise ValueError(f"Erreur lors de la lecture du fichier CSV: {e}")
+        
+        # Si la colonne de date n'est pas indiqué
+        if date_column is None:
+            raise ValueError(f"Il faut indiquer une colonne de date dans le fichier")
+        
+        # Formattage de la colonne de date
         try:
-            data = pd.read_parquet(filepath)
-            
-            # Si la colonne de date n'est pas indiqué et que les indices ne sont pas des dates
-            if date_column is not None and not isinstance(data.index, pd.DatetimeIndex):
-                if date_column in data.columns:
-                    data.set_index(date_column, inplace=True)
-                    data.index = pd.to_datetime(data.index)
-            
-            # Conversion des colonnes en float
-            for col in data.columns:
-                if not pd.api.types.is_datetime64_any_dtype(data[col]):
-                    data[col] = pd.to_numeric(data[col], errors='coerce')
-            
-            return data
-            
+            data[date_column] = pd.to_datetime(data[date_column], format=self.date_format)
         except Exception as e:
-            raise ValueError(f"Erreur lors de la lecture du Parquet: {str(e)}")
+            # Si le format des dates indiqué par l'utilisateur n'est pas correct
+            raise ValueError(f"Le format de date indiqué n'est pas le bon")
+        
+        # Les dates sont les indices du dataframe
+        data.set_index(date_column, inplace=True)
+        
+        # Conversion des colonnes en float
+        data = data.apply(pd.to_numeric, errors='coerce')
+        
+        return data
+            
+    
+    def _read_parquet(self, filepath: Path, date_column: str = None) -> pd.DataFrame:
+        """Lire un fichier Parquet."""
+
+        try:
+            data = pd.read_parquet(filepath).replace(',', '.', regex=True)
+        except Exception as e:
+            raise ValueError(f"Erreur lors de la lecture du fichier CSV: {e}")
+        
+        # Si la colonne de date n'est pas indiqué et que les indices ne sont pas des dates
+        if date_column is not None and not isinstance(data.index, pd.DatetimeIndex):
+            if date_column in data.columns:
+                data.set_index(date_column, inplace=True)
+                data.index = pd.to_datetime(data.index, format=self.date_format)
+            else:
+                raise ValueError(f"La colonne n'est pas dans le fichier")
+        
+        # Conversion des colonnes en float
+        data = data.apply(pd.to_numeric, errors='coerce')
+        
+        return data
+        

@@ -50,6 +50,10 @@ class Backtester:
         Returns:
             Result: Résultats du backtest
         """
+        # positions = []
+        # current_position = {asset: 0 for asset in strategy.assets}
+        # trades = []
+
         positions = []
         current_position = {asset: 0 for asset in strategy.assets}
         trades = []
@@ -67,27 +71,34 @@ class Backtester:
             new_position = strategy.get_position(historical_data, current_position)
             
             # Si la position change, on enregistre le trade et son coût
-            for asset in strategy.assets:
-                if new_position[asset] != current_position[asset]:
-                    trade_cost = (abs(new_position[asset] - current_position[asset]) * 
-                                (self.transaction_costs[asset] + self.slippage[asset]))
-                    trades.append({
-                        'timestamp': timestamp,
-                        'asset': asset,
-                        'from_pos': current_position[asset],
-                        'to_pos': new_position[asset],
-                        'cost': trade_cost
-                    })
-
+            position_changes = {
+                    asset: new_position[asset] - current_position[asset] 
+                    for asset in strategy.assets
+                }
+                
+            trades.extend([
+                {
+                    'timestamp': timestamp,
+                    'asset': asset,
+                    'from_pos': current_position[asset],
+                    'to_pos': new_pos,
+                    'cost': abs(position_changes[asset]) * (
+                        self.transaction_costs[asset] + self.slippage[asset]
+                    )
+                }
+                for asset, new_pos in new_position.items()
+                if position_changes[asset] != 0
+            ])
+            
             # Ajout de la position au timestamp t, que la position ait changé ou non
             positions.append({
                 'timestamp': timestamp,
-                **{f"{asset}": new_position[asset] for asset in strategy.assets}
+                **new_position
             })
 
             # Mise à jour la position actuelle pour la prochaine itération
             current_position = new_position.copy()
-        
+
         # Tableau de position
         positions_df = pd.DataFrame(positions).set_index('timestamp')
 
