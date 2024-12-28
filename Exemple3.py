@@ -14,9 +14,14 @@ all_asset = data.columns.to_list()
 
 # Création d'une stratégie par héritage
 
-# 
+
 
 class DayVariationStrategy(Strategy):
+
+# Stratégie: Variation journalière
+# Cette stratégie compare le prix actuel à celui de la veille.
+# Si le prix actuel est plus élevé, elle prend une position long (1), sinon une position short (-1).
+
     def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
         """
         Stratégie qui achète si le prix du jour est supérieur à celui de la veille,
@@ -39,9 +44,13 @@ class DayVariationStrategy(Strategy):
         # Acheter si le prix a augmenté, vendre sinon
         return 1.0 if current_price > previous_price else -1.0
 
-# 
+ 
 class MovingAverageCrossover(Strategy):
-    """Stratégie de croisement de moyennes mobiles pour plusieurs actifs."""
+
+# Stratégie: Croisement de moyennes mobiles
+# Cette stratégie utilise deux moyennes mobiles: une courte et une longue.
+# Elle prend une position long si la moyenne courte dépasse la longue, et short dans le cas inverse.
+
     
     def __init__(self, assets, short_window=20, long_window=50, rebalancing_frequency='D', 
                  allocation_method='equal'):
@@ -74,8 +83,12 @@ class MovingAverageCrossover(Strategy):
 # Création d'une stratégie simple avec décorateur
 @strategy
 def momentum_strategy(historical_data, current_position, assets, rebalancing_frequency, chosen_window=20):
+
+# Stratégie: Momentum
+# Cette stratégie mesure le momentum basé sur les variations de prix sur une fenêtre donnée.
+# Elle prend une position long si le rendement est positif, et short s'il est négatif.
+
     """
-    Calcule un signal de trading basé sur le momentum pour plusieurs actifs.
     
     Args:
         historical_data (pd.DataFrame): Données historiques avec les prix des actifs.

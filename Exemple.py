@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 filepath = 'data.parquet'
 # filepath = 'fichier_donnee.csv'
 try:
-    # Essayer de lire en tant que CSV
+    #lire en tant que CSV
     data = pd.read_csv(filepath, sep=';').replace(',', '.', regex=True)
     data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
     data.set_index('Date_Price', inplace=True)
@@ -87,8 +87,10 @@ class OrdinaryLeastSquaresStrategy(Strategy):
         return positions
 
 
-# Création d'une stratégie par héritage
 class MovingAverageCrossover(Strategy):
+
+# Cette stratégie utilise deux moyennes mobiles (courte et longue).
+# Une position long est prise si la moyenne courte dépasse la longue, et short dans le cas inverse.
 
     def __init__(self, short_window=20, long_window=50, rebalancing_frequency='D'):
         super().__init__(rebalancing_frequency=rebalancing_frequency)
@@ -199,7 +201,11 @@ class MCOBasedStrategy(Strategy):
             return 0.0       
 
 class VolatilityBasedStrategy(Strategy):
+
     """Stratégie basée sur la volatilité."""
+
+# Cette stratégie identifie les actifs volatils en fonction d'un seuil.
+# Les actifs avec une forte volatilité sont short, et ceux avec une faible volatilité sont long.
 
     def __init__(self, volatility_threshold=0.02, window_size=10, rebalancing_frequency='D'):
         super().__init__(rebalancing_frequency=rebalancing_frequency)
@@ -209,7 +215,7 @@ class VolatilityBasedStrategy(Strategy):
 
     def fit(self, data: pd.DataFrame) -> None:
         """
-        Calcule la volatilité sur une fenêtre donnée.
+        Fonction qui calcule la volatilité sur une fenêtre donnée.
 
         Args:
             data: DataFrame contenant les données historiques avec une colonne 'price'.
