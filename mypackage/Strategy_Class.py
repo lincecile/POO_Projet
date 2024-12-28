@@ -32,7 +32,7 @@ def strategy(func):
     
     class WrappedStrategy(Strategy):
         def __init__(self, rebalancing_frequency='D', assets=None, **kwargs):
-            super().__init__(rebalancing_frequency=rebalancing_frequency)
+            super().__init__(rebalancing_frequency=rebalancing_frequency, assets=assets)
             self.kwargs = kwargs
             
         def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:

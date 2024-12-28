@@ -19,8 +19,11 @@ class TestBacktester(unittest.TestCase):
 
         # Création stratégie test
         class FakeStrategy(Strategy):
+            def __init__(self):
+                super().__init__(rebalancing_frequency='D', assets=['asset1', 'asset2'])
+            
             def get_position(self, historical_data, current_position):
-                return {name: 1 for name in historical_data.columns} 
+                return {asset: 1 for asset in self.assets}
                 
         self.strategy = FakeStrategy()
         self.backtester = Backtester(self.sample_data)
@@ -30,6 +33,19 @@ class TestBacktester(unittest.TestCase):
         self.assertEqual(self.backtester.transaction_costs, {'asset1': 0.001,'asset2': 0.001}, "Le coût de transaction par défaut doit être 0.001 pour chaque actif.")
         self.assertEqual(self.backtester.slippage, {'asset1': 0.0005, 'asset2': 0.0005}, "Le slippage par défaut doit être 0.0005 pour chaque actif.")
 
+    # Vérification que la classe Backtester fonctionne avec les valeurs de l'utilisateur
+    def test_initialization_with_custom_costs(self):
+        custom_costs = {'asset1': 0.002, 'asset2': 0.003}
+        custom_slippage = {'asset1': 0.001, 'asset2': 0.0015}
+        backtester = Backtester(
+            self.sample_data, 
+            transaction_costs=custom_costs, 
+            slippage=custom_slippage
+        )
+        
+        self.assertEqual(backtester.transaction_costs, custom_costs)
+        self.assertEqual(backtester.slippage, custom_slippage)
+
     # Vérification que la classe Backtester renvoie bien un objet de la classe Result 
     def test_run_backtest(self):
         result = self.backtester.exec_backtest(self.strategy)
@@ -38,7 +54,9 @@ class TestBacktester(unittest.TestCase):
         self.assertTrue(hasattr(result, 'positions'), "L'objet doit contenir l'attribut 'positions'.")
         self.assertTrue(hasattr(result, 'trades'), "L'objet doit contenir l'attribut 'trades'.")
         self.assertTrue(hasattr(result, 'returns'), "L'objet doit contenir l'attribut 'returns'.")
-    
+        self.assertTrue(hasattr(result, 'data'), "L'objet doit contenir l'attribut 'data'.")
+        self.assertTrue(hasattr(result, 'statistics'), "L'objet doit contenir l'attribut 'statistics'.")
+
     # Vérification que les coûts de transaction et de slippage sont pris en compte 
     def test_transaction_costs(self):
         backtester = Backtester(self.sample_data, transaction_costs=0.01, slippage=0.01)

@@ -192,6 +192,9 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
     # Liste des métrics avec valeurs très supérieur à 1 
     liste_sep = stats_comparison.loc[:, (stats_comparison > 20).any()].columns
 
+    # On s'assure d'avoir au moins une metrique pour la seconde axe
+    liste_sep = ['num_trades'] if len(liste_sep) == 0 else liste_sep
+
     # Statistiques pour chaque dictionnaire
     stats_sep = stats_comparison[liste_sep]               # séparation des métrics avec valeurs très supérieur à 1  
     stats_main = stats_comparison.drop(columns=liste_sep)

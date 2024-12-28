@@ -34,11 +34,16 @@ class TestResult(unittest.TestCase):
 
         self.result = Result(self.data, self.positions, self.trades)
     
-    # Vérification que la classe Result possède les bons attributs 
+    # Vérification que la classe Result possède les bons attributs avec le bon type
     def test_initialization(self):
-        self.assertTrue(hasattr(self.result, 'returns'))
-        self.assertTrue(hasattr(self.result, 'statistics'))
-    
+        self.assertIsInstance(self.result.data, pd.DataFrame)
+        self.assertIsInstance(self.result.positions, pd.DataFrame)
+        self.assertIsInstance(self.result.trades, pd.DataFrame)
+        self.assertIsInstance(self.result.returns, pd.DataFrame)
+        self.assertIsInstance(self.result.returns_no_cost, pd.DataFrame)
+        self.assertIsInstance(self.result.statistics, dict)
+        self.assertIsInstance(self.result.statistics_each_asset, dict)
+
     # Vérification que les metrics sont bien calculés 
     def test_calculate_statistics(self):
         stats = self.result.statistics
