@@ -44,6 +44,37 @@ class DayVariationStrategy(Strategy):
         # Acheter si le prix a augmenté, vendre sinon
         return 1.0 if current_price > previous_price else -1.0
 
+class DayVariationStrategy2(Strategy):
+    def __init__(self, assets, rebalancing_frequency='D'):
+        """
+        Initialisation de la stratégie Day Variation.
+        Args:
+            assets: Liste des actifs à trader.
+            rebalancing_frequency: Fréquence de rééquilibrage ('D', 'W', 'M', etc.).
+        """
+        super().__init__(rebalancing_frequency=rebalancing_frequency, assets=assets)
+
+    def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
+        """
+        Calcule les positions en fonction de la variation journalière.
+        Args:
+            historical_data: Données historiques contenant les prix des actifs.
+            current_position: Positions actuelles.
+        Returns:
+            dict: Positions pour chaque actif (-1 ou 1).
+        """
+        if len(historical_data) < 2:
+            # Pas assez de données pour calculer la variation
+            return {asset: 0 for asset in self.assets}
+
+        positions = {}
+        for asset in self.assets:
+            current_price = historical_data[asset].iloc[-1]
+            previous_price = historical_data[asset].iloc[-2]
+            positions[asset] = 1 if current_price > previous_price else -1
+
+        return positions
+
  
 class MovingAverageCrossover(Strategy):
 
@@ -163,7 +194,7 @@ class VolatilityBasedStrategy(Strategy):
 
     def fit(self, data: pd.DataFrame) -> None:
         """
-        Calcule la volatilité historique pour chaque actif.
+        Calcule la volatilité historique pour chaque actif sur une fenêtre donnée.
 
         :param data: Données historiques (prix des actifs).
         """
@@ -312,6 +343,10 @@ class MCOBasedStrategy(Strategy):
 
 
 # Création des instances et exécution des backtests
+day_var_strat_daily = DayVariationStrategy2(assets=all_asset, rebalancing_frequency='D')
+day_var_strat_weekly = DayVariationStrategy2(assets=all_asset, rebalancing_frequency='W')
+day_var_strat_monthly = DayVariationStrategy2(assets=all_asset, rebalancing_frequency='M')
+
 ma_strat_default = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50)
 ma_strat_weekly = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50, rebalancing_frequency='W')     # Weekly rebalancing
 ma_strat_monthly = MovingAverageCrossover(assets=all_asset, short_window=20, long_window=50, rebalancing_frequency='M')    # Monthly rebalancing
@@ -350,6 +385,7 @@ dico_strat = {
     'mom_strat_monthly': (mom_strat_monthly, 0.005, 0.003),
     'vol_strat_monthly': (vol_strat_monthly, 0.002, 0.0005),
     'mco_strat_monthly': (mco_strat_monthly, 0.01, 0.004),
+    'day_var_strat_daily': (day_var_strat_daily, 0.002, 0.0005)
 }
 
 #print(ma_strat_default.get_position(data,1))
