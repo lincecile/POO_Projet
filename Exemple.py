@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 filepath = 'data.parquet'
 # filepath = 'fichier_donnee.csv'
 try:
-    # Essayer de lire en tant que CSV
+    #lire en tant que CSV
     data = pd.read_csv(filepath, sep=';').replace(',', '.', regex=True)
     data['Date_Price'] = pd.to_datetime(data['Date_Price'], format='%d/%m/%Y')
     data.set_index('Date_Price', inplace=True)
@@ -21,42 +21,76 @@ except Exception as e_csv:
 data = data.astype(float)
 
 # Stratégie basée sur les Moindres Carrés Ordinaires (MCO)
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import pandas as pd
+
 class OrdinaryLeastSquaresStrategy(Strategy):
-    """Stratégie utilisant les Moindres Carrés Ordinaires (MCO)."""
+    """
+    Stratégie utilisant les Moindres Carrés Ordinaires (MCO) pour prédire les tendances des prix.
+
+    Ajuste la position selon l'écart relatif entre le prix actuel et le prix prévu par une régression linéaire.
+    """
 
     def __init__(self, window_size=20, threshold=0.01, rebalancing_frequency='D'):
+        """
+        Initialise la stratégie avec les paramètres donnés.
+
+        :param window_size: Nombre de périodes pour la fenêtre de régression.
+        :param threshold: Seuil pour déclencher une position (en pourcentage).
+        :param rebalancing_frequency: Fréquence de rééquilibrage ('D', 'W', etc.).
+        """
         super().__init__(rebalancing_frequency=rebalancing_frequency)
         self.window_size = window_size
         self.threshold = threshold
 
-    def get_position(self, historical_data: pd.DataFrame, current_position: float) -> float:
-        if len(historical_data) < self.window_size:
-            return 0  # Pas de données suffisantes pour la régression
+    def get_position(self, historical_data: pd.DataFrame, current_position: dict) -> dict:
+        """
+        Calcule les positions pour chaque actif en fonction de l'écart entre le prix actuel et le prix prévu.
 
-        # Préparation des données pour la régression linéaire
-        prices = historical_data[historical_data.columns[0]].iloc[-self.window_size:].values.reshape(-1, 1)
-        time = np.arange(self.window_size).reshape(-1, 1)
+        :param historical_data: Données historiques des actifs sous forme de DataFrame.
+        :param current_position: Positions actuelles pour chaque actif.
+        :return: Dictionnaire des nouvelles positions.
+        """
+        positions = {}
 
-        # Ajustement du modèle linéaire
-        model = LinearRegression()
-        model.fit(time, prices)
+        for asset in historical_data.columns:
+            asset_data = historical_data[asset]
+            if len(asset_data) < self.window_size:
+                # Pas assez de données pour effectuer la régression
+                positions[asset] = 0
+                continue
 
-        # Prédiction du prix actuel
-        predicted_price = model.predict([[self.window_size]])[0]
-        current_price = historical_data[historical_data.columns[0]].iloc[-1]
+            # Préparation des données pour la régression linéaire
+            prices = asset_data.iloc[-self.window_size:].values.reshape(-1, 1)
+            time = np.arange(self.window_size).reshape(-1, 1)
 
-        # Calcul de l'écart relatif
-        price_deviation = (current_price - predicted_price) / predicted_price
+            # Ajustement du modèle linéaire
+            model = LinearRegression()
+            model.fit(time, prices)
 
-        if price_deviation > self.threshold:
-            return -1  # Vendre si le prix actuel est supérieur au prix prévu
-        elif price_deviation < -self.threshold:
-            return 1  # Acheter si le prix actuel est inférieur au prix prévu
-        else:
-            return 0  # Neutre si l'écart est dans la plage acceptable
+            # Prédiction du prix actuel
+            predicted_price = model.predict([[self.window_size]])[0]
+            current_price = asset_data.iloc[-1]
 
-# Création d'une stratégie par héritage
+            # Calcul de l'écart relatif
+            price_deviation = (current_price - predicted_price) / predicted_price
+
+            # Génération des signaux de position
+            if price_deviation > self.threshold:
+                positions[asset] = -1  # Position short
+            elif price_deviation < -self.threshold:
+                positions[asset] = 1  # Position long
+            else:
+                positions[asset] = 0  # Pas de position
+
+        return positions
+
+
 class MovingAverageCrossover(Strategy):
+
+# Cette stratégie utilise deux moyennes mobiles (courte et longue).
+# Une position long est prise si la moyenne courte dépasse la longue, et short dans le cas inverse.
 
     def __init__(self, short_window=20, long_window=50, rebalancing_frequency='D'):
         super().__init__(rebalancing_frequency=rebalancing_frequency)
@@ -167,7 +201,11 @@ class MCOBasedStrategy(Strategy):
             return 0.0       
 
 class VolatilityBasedStrategy(Strategy):
+
     """Stratégie basée sur la volatilité."""
+
+# Cette stratégie identifie les actifs volatils en fonction d'un seuil.
+# Les actifs avec une forte volatilité sont short, et ceux avec une faible volatilité sont long.
 
     def __init__(self, volatility_threshold=0.02, window_size=10, rebalancing_frequency='D'):
         super().__init__(rebalancing_frequency=rebalancing_frequency)
@@ -177,7 +215,7 @@ class VolatilityBasedStrategy(Strategy):
 
     def fit(self, data: pd.DataFrame) -> None:
         """
-        Calcule la volatilité sur une fenêtre donnée.
+        Fonction qui calcule la volatilité sur une fenêtre donnée.
 
         Args:
             data: DataFrame contenant les données historiques avec une colonne 'price'.
