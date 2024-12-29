@@ -200,10 +200,15 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
     stats_main = stats_comparison.drop(columns=liste_sep)
 
     if backend == 'matplotlib':
+        # Définir la colormap
+        colormap = plt.cm.get_cmap('tab20c', len(stats_sep.columns))  # Colormap avec des couleurs claires
+        # Créer une liste de couleurs claires pour chaque barre
+        colors = [colormap(i / len(stats_sep.columns)) for i in range(len(stats_sep.columns))]
+
         fig, ax1 = plt.subplots(figsize=(12, 6))
 
         # Graphique pour les métriques séparées
-        stats_sep.plot(kind='bar', ax=ax1, color='lightblue', alpha=0.5, label=liste_sep)
+        stats_sep.plot(kind='bar', ax=ax1, color=colors, alpha=0.5, label=liste_sep)
 
         ax1.set_xlabel('Stratégies')
         ax1.set_title('Comparaison des Stratégies')
