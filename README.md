@@ -4,15 +4,12 @@ Conception d'un framework de backtesting permettant d'évaluer et de comparer di
 L'outil permet aux utilisateurs de développer et d'évaluer leurs propres stratégies d'investissement.
 
 **Fonctionnalités du framework** : L'utilisateur peut 
-- définir et tester facilement de nouvelles stratégies.
+- définir et tester facilement de nouvelles stratégies sur un ou plusieurs actifs simultanément.
 - comparer plusieurs stratégies entre elles.
 - définir des frais de transaction et de slippage.
 - créer des stratégies par héritage de la classe abstraite ou par un décorateur.
 - spécifier une fréquence de rebalancement pour chaque stratégie.
-
-%%% pour l'instant qu'un seul actif
-- créer et de tester des stratégies sur un ou plusieurs actifs simultanément en plaçant les actifs dans 
-%%%% 
+- créer et de tester des stratégies 
 
 ## Données:
    - Le framework accepte des données d'entrée au format CSV ou Parquet.
@@ -24,7 +21,7 @@ L'outil permet aux utilisateurs de développer et d'évaluer leurs propres strat
 
 La classe `Strategy` possède :
 - Méthode obligatoire : `get_position(historical_data, current_position)`
-- Méthode optionnelle : `fit(data)` %%%%%
+- Méthode optionnelle : `fit(data)`
 
 ### Classe `Backtester`
 
@@ -35,25 +32,26 @@ La classe `Backtester` est instanciée avec une série de données d'entrée :
 ### Classe `Result` 
 
 La classe `Result` calcule différentes statistiques de performance: 
-%%différentes méthodes pour le plotting%%
 
 - $\text{Performance totale} = \prod_{t=1}^T (1 + r_t) - 1$
 
-- $\text{Performance annualisée} = \left( \prod_{t=1}^T (1 + r_t) \right)^{\frac{N}{T}} - 1$
+- $\text{Performance annualisée} = \left( \prod_{t=1}^T (1 + r_t) \right)^{\frac{252}{T}} - 1$
 
 - $\text{Facteur de profitabilité} = \frac{\text{Gain total}}{\text{Perte totale}}$
 
-- $\text{Volatilité annualisée} = \sigma(r) \cdot \sqrt{N}$
+- $\text{Volatilité annualisée} = \sigma(r) \cdot \sqrt{252}$
 
-- $\text{Ratio de Sharpe} = \frac{\bar{r} - r_f}{\sigma(r)}$
+- $\text{Ratio de Sharpe} = \frac{\text{Annual returns}}{text{Volatilité annualisée}}$
 
 - $\text{Maximum Drawdown} = \min \left( \frac{C_t - \max(C_{1:t})}{\max(C_{1:t})} \right)$
+Où $C_t$ est la valeur du capital cumulé au temps 
+$C_{1:t}$ est la valeur maximale du capital cumulé jusqu'au temps t.
 
-- $\text{Ratio de Sortino} = \frac{\bar{r} - r_f}{\sigma_{\text{négatif}}(r)}$
+- $\text{Ratio de Sortino} = \frac{\text{Annual returns}}{text{Volatilité des returns négatifs}}$
 
-- $\text{VaR (Value at Risk) à 95\%} = \text{Quantile}_{0.05}(-r)$
+- $\text{VaR (Value at Risk) à 95\%} = \text{Quantile}_{0.05}(r)$
 
-- $\text{CVaR (Conditional Value at Risk) à 95\%} = \mathbb{E}[r \mid r \leq \text{VaR}_{0.95}]$
+- $\text{CVaR (Conditional Value at Risk) à 95\%} = \frac{1}{N_{0.05}}*\sum_{r_i \leq \text{Quantile}_{0.05}}(r_i)$
 
 - $\text{Profit/Loss Ratio} = \frac{\text{Gain moyen}}{\text{Perte moyenne}}$
 
@@ -66,45 +64,46 @@ La classe `Result` calcule différentes statistiques de performance:
 Cette fonction permet de comparer les résultats de différentes stratégies de manière graphique.
 - L'utilisateur a la possibilité de choisir le backend pour les visualisations (matplotlib, seaborn ou plotly).
 
-4. **Structuration du code** :
-- Adoptez une approche orientée objet pour la structure de votre projet.
-- Divisez votre code en modules et classes distincts pour chaque fonctionnalité.
-- Commentez et documentez votre code pour faciliter sa compréhension.
-- Créez un fichier `pyproject.toml` pour permettre l'installation via pip.
-- Incluez des tests unitaires et d'intégration pour votre code.
+## Flexibilité et extensibilité du framework:
 
-5. **Exemple d'utilisation** :
-- Fournissez un notebook Jupyter (ou équivalent) qui démontre l'utilisation du package.
-- Ce notebook doit inclure un exemple complet d'utilisation du framework, de la création d'une stratégie à l'analyse des résultats.
-- Assurez-vous que l'exemple montre les principales fonctionnalités du framework et inclut des visualisations des résultats.
+### Classe `DataFileReader`
 
-## Critères d'évaluation
+La classe `DataFileReader` permet à l'utilisateur:
+- Lire un fichier csv ou parquet avec une même méthode 'read_file(filepath, date_column)'.
 
-1. **Structure du code** :
-   - Organisation et modularité du code.
-   - Utilisation appropriée des concepts de programmation orientée objet vus en cours.
-   - Clarté et propreté du code (pas de redondance, noms de variables explicites, etc.).
+### Classe `Strategy_Manager` 
 
-2. **Documentation** :
-   - Présence de commentaires explicatifs.
-   - Qualité et clarté de la documentation fournie (par exemple, docstrings pour les classes et méthodes).
+La classe `Strategy_Manager` facilite l'utilisation à grande échelle du backtester, sur un grand nombre de stratégie avec différentes méthodes:
+- `run_backtests()`: (Voir le notebook avec plusieurs stratégies)
+cette méthode lance le backtest pour chaque stratégie
+chaque stratégie peut avoir un coût de transaction et de slippage unique: l'utilisateur entre alors un float
+chaque stratégie peut avoir des coûts de transaction et de slippage différents: l'utilisateur entre alors un dictionnaire de coût avec en clé les differents actifs et en valeurs les différents coûts
+Si l'utilisateur n'indique rien alors un coût pas défaut est appliqué.
 
-3. **Fonctionnalités** :
-   - Implémentation correcte du backtester et des différentes composantes du framework.
-   - Flexibilité et extensibilité du framework pour accommoder diverses stratégies.
-   - Capacité à gérer des stratégies sur un ou plusieurs actifs.
-   - Qualité des visualisations et des résultats produits.
+- `plot_all_strategies(backend, include_costs)`: cette méthode permet d'afficher toutes les stratégies testées.
+L'utilisateur peut choisir 
+différent backend pour le graphique
+d'inclure ou non les coûts d'execution sur les graphiques
 
-4. **Tests** :
-   - Couverture et pertinence des tests unitaires et d'intégration.
+- `plot_strategy(strategy_name, backend, include_costs)`: cette méthode permet d'afficher une graphique précis si plusieurs stratégie ont été testé.
+L'utilisateur peut choisir 
+différent backend pour le graphique
+d'inclure ou non les coûts d'execution sur les graphiques
 
-5. **Installation et déploiement** :
-   - Configuration correcte du fichier `pyproject.toml`.
-   - Facilité d'installation et d'utilisation du package.
+- `compare_strategies(backend, show_plot)`: cette méthode permet d'afficher toutes les métriques sous forme d'histogramme.
+Afin de facilité la visualisation des backends `matplotlib` et `seaborn`, deux axes d'échelles a été mis en place sur le graphe.
 
-6. **Exemple d'utilisation** :
-   - Qualité et exhaustivité du notebook d'exemple fourni.
-   - Clarté des explications et pertinence des exemples choisis.
+- `print_statistics(strategy_name, detail)`: cette méthode permet d'afficher toutes les métriques sous forme de tableau.
+L'utilisateur peut choisir :
+d'afficher un tableau sur les statistiques d'une stratégie précise
+d'afficher un tableau détaillé sur les statistiques actifs par actifs de chaque stratégie
+d'afficher un tableau détaillé sur les statistiques actifs par actifs d'une stratégie précise
 
-## Conseils
-- Pensez à l'efficacité de votre code, surtout pour les backtests sur de grandes quantités de données historiques.
+- `remove_strategy(name)`: cette méthode permet de supprimer une stratégie précise. 
+
+            
+
+
+
+  
+
