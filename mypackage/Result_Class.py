@@ -201,7 +201,7 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
 
     if backend == 'matplotlib':
         # Définir la colormap
-        colormap = plt.cm.get_cmap('tab20c', len(stats_sep.columns))  # Colormap avec des couleurs claires
+        colormap = plt.colormaps['tab20c']  # Colormap avec des couleurs claires
         # Créer une liste de couleurs claires pour chaque barre
         colors = [colormap(i / len(stats_sep.columns)) for i in range(len(stats_sep.columns))]
 
