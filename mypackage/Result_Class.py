@@ -190,7 +190,7 @@ def compare_results(results: dict, backend: str = 'matplotlib', show_plot: bool 
     stats_comparison = pd.DataFrame([r.statistics for r in results.values()], index=results.keys())
 
     # Liste des métrics avec valeurs très supérieur à 1 
-    liste_sep = stats_comparison.loc[:, (stats_comparison > 20).any()].columns
+    liste_sep = stats_comparison.loc[:, (abs(stats_comparison) > 20).any()].columns
 
     # On s'assure d'avoir au moins une metrique pour la seconde axe
     liste_sep = ['num_trades'] if len(liste_sep) == 0 else liste_sep
