@@ -4,12 +4,12 @@ Conception d'un framework de backtesting permettant d'évaluer et de comparer di
 L'outil permet aux utilisateurs de développer et d'évaluer leurs propres stratégies d'investissement.
 
 **Fonctionnalités du framework** : L'utilisateur peut 
-- définir et tester facilement de nouvelles stratégies sur un ou plusieurs actifs simultanément.
-- comparer plusieurs stratégies entre elles.
-- définir des frais de transaction et de slippage.
-- créer des stratégies par héritage de la classe abstraite ou par un décorateur.
-- spécifier une fréquence de rebalancement pour chaque stratégie.
-- créer et de tester des stratégies 
+- Définir et tester facilement de nouvelles stratégies sur un ou plusieurs actifs simultanément.
+- Comparer plusieurs stratégies entre elles.
+- Définir des frais de transaction et de slippage.
+- Créer des stratégies par héritage de la classe abstraite ou par un décorateur.
+- Spécifier une fréquence de rebalancement pour chaque stratégie.
+- Créer et de tester des stratégies 
 
 ## Données:
    - Le framework accepte des données d'entrée au format CSV ou Parquet.
@@ -41,13 +41,13 @@ La classe `Result` calcule différentes statistiques de performance:
 
 - $\text{Volatilité annualisée} = \sigma(r) \cdot \sqrt{252}$
 
-- $\text{Ratio de Sharpe} = \frac{\text{Annual returns}}{text{Volatilité annualisée}}$
+- $\text{Ratio de Sharpe} = \frac{\text{Annual returns}}{\text{Volatilité annualisée}}$
 
 - $\text{Maximum Drawdown} = \min \left( \frac{C_t - \max(C_{1:t})}{\max(C_{1:t})} \right)$
 Où $C_t$ est la valeur du capital cumulé au temps 
 $C_{1:t}$ est la valeur maximale du capital cumulé jusqu'au temps t.
 
-- $\text{Ratio de Sortino} = \frac{\text{Annual returns}}{text{Volatilité des returns négatifs}}$
+- $\text{Ratio de Sortino} = \frac{\text{Annual returns}}{\text{Volatilité des returns négatifs}}$
 
 - $\text{VaR (Value at Risk) à 95\%} = \text{Quantile}_{0.05}(r)$
 
@@ -69,35 +69,35 @@ Cette fonction permet de comparer les résultats de différentes stratégies de 
 ### Classe `DataFileReader`
 
 La classe `DataFileReader` permet à l'utilisateur:
-- Lire un fichier csv ou parquet avec une même méthode 'read_file(filepath, date_column)'.
+- Lire un fichier csv ou parquet avec une même méthode `read_file(filepath, date_column)`.
 
 ### Classe `Strategy_Manager` 
 
 La classe `Strategy_Manager` facilite l'utilisation à grande échelle du backtester, sur un grand nombre de stratégie avec différentes méthodes:
-- `run_backtests()`: (Voir le notebook avec plusieurs stratégies)
-cette méthode lance le backtest pour chaque stratégie
-chaque stratégie peut avoir un coût de transaction et de slippage unique: l'utilisateur entre alors un float
-chaque stratégie peut avoir des coûts de transaction et de slippage différents: l'utilisateur entre alors un dictionnaire de coût avec en clé les differents actifs et en valeurs les différents coûts
-Si l'utilisateur n'indique rien alors un coût pas défaut est appliqué.
+- `run_backtests()`: (Voir le notebook avec plusieurs stratégies)  
+   - Cette méthode lance le backtest pour chaque stratégie.
+      - Chaque stratégie peut avoir un coût de transaction et de slippage unique: l'utilisateur entre alors un float.
+      - Chaque stratégie peut avoir des coûts de transaction et de slippage différents: l'utilisateur entre alors un dictionnaire de coût avec en clé les differents actifs et en valeurs les différents coûts.
+      - Si l'utilisateur n'indique rien alors un coût pas défaut est appliqué.
 
 - `plot_all_strategies(backend, include_costs)`: cette méthode permet d'afficher toutes les stratégies testées.
-L'utilisateur peut choisir 
-différent backend pour le graphique
-d'inclure ou non les coûts d'execution sur les graphiques
+   - L'utilisateur peut choisir
+      - différent backend pour le graphique
+      - d'inclure ou non les coûts d'execution sur les graphiques
 
 - `plot_strategy(strategy_name, backend, include_costs)`: cette méthode permet d'afficher une graphique précis si plusieurs stratégie ont été testé.
-L'utilisateur peut choisir 
-différent backend pour le graphique
-d'inclure ou non les coûts d'execution sur les graphiques
+   - L'utilisateur peut choisir
+      - différent backend pour le graphique
+      - d'inclure ou non les coûts d'execution sur les graphiques
 
 - `compare_strategies(backend, show_plot)`: cette méthode permet d'afficher toutes les métriques sous forme d'histogramme.
-Afin de facilité la visualisation des backends `matplotlib` et `seaborn`, deux axes d'échelles a été mis en place sur le graphe.
+   - Afin de facilité la visualisation des backends `matplotlib` et `seaborn`, deux axes d'échelles a été mis en place sur le graphe.
 
 - `print_statistics(strategy_name, detail)`: cette méthode permet d'afficher toutes les métriques sous forme de tableau.
-L'utilisateur peut choisir :
-d'afficher un tableau sur les statistiques d'une stratégie précise
-d'afficher un tableau détaillé sur les statistiques actifs par actifs de chaque stratégie
-d'afficher un tableau détaillé sur les statistiques actifs par actifs d'une stratégie précise
+   - L'utilisateur peut choisir :
+      - d'afficher un tableau sur les statistiques d'une stratégie précise.
+      - d'afficher un tableau détaillé sur les statistiques actifs par actifs de chaque stratégie.
+      - d'afficher un tableau détaillé sur les statistiques actifs par actifs d'une stratégie précise.
 
 - `remove_strategy(name)`: cette méthode permet de supprimer une stratégie précise. 
 
